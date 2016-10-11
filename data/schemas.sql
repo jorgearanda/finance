@@ -34,15 +34,15 @@ CREATE TABLE IF NOT EXISTS marketDays (
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
+    day date not null default current_date references marketDays(day),
     txType transactionType not null,
     account text not null references accounts(name),
     source text references assets(ticker),
     target text references assets(ticker),
-    day date not null default current_date references marketDays(day),
-    units numeric(12, 2),
-    unitPrice numeric(12, 4),
-    commission numeric(12, 4),
-    total numeric(12, 4) not null
+    units numeric(9, 2),
+    unitPrice numeric(9, 2),
+    commission numeric(9, 2),
+    total numeric(12, 2) not null
 );
 
 CREATE TABLE IF NOT EXISTS assetPrices (
