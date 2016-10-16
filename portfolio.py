@@ -1,7 +1,12 @@
+from collections import namedtuple, OrderedDict
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 import psycopg2
 
 import config
+
+
+Transaction = namedtuple('Transaction', 'day, txType, account, source, target, units, unitPrice, commission, total')
 
 
 class Portfolio():
@@ -11,7 +16,8 @@ class Portfolio():
         else:
             self.conn = conn
         self.account = account
-        self.performance = []
+        self.date_created = self.get_date_created()
+        self.performance = OrderedDict()
         self.load()
 
     def load(self):
@@ -19,8 +25,6 @@ class Portfolio():
         self.load_transactions()
 
     def load_market_days(self):
-        self.date_created = self.get_date_created()
-
         cur = self.conn.cursor()
         cur.execute('''
                     SELECT day, open
@@ -29,16 +33,35 @@ class Portfolio():
                     ORDER BY day;''',
                     {'created': self.date_created, 'today': date.today()})
 
-        self.performance = [{'date': row[0], 'open': row[1]} for row in cur.fetchall()]
+        for row in cur.fetchall():
+            self.performance[row[0]] = {
+                'date': row[0],
+                'open': row[1],
+                'dayDeposits': Decimal(0.0)
+            }
         cur.close()
 
-        if self.performance[0]['date'] > self.date_created:
+        dates = list(self.performance.items())
+        if dates[0][0] > self.date_created:
             raise DataError('marketDays table starts after this account was opened')
-        if self.performance[-1]['date'] < date.today():
+        if dates[-1][0] < date.today():
             raise DataError('marketDays table ends before today')
 
     def load_transactions(self):
-        pass
+        cur = self.conn.cursor()
+        cur.execute('''
+                    SELECT day, txType, account, source, target, units, unitPrice, commission, total
+                    FROM transactions
+                    WHERE %(account)s is null OR account = %(account)s
+                    ORDER BY day;''',
+                    {'account': self.account})
+
+        transactions = [Transaction(*values) for values in cur.fetchall()]
+        cur.close()
+
+        for tx in transactions:
+            if tx.txType == 'deposit':
+                self.add_deposit(tx)
 
     def get_date_created(self):
         cur = self.conn.cursor()
@@ -55,6 +78,9 @@ class Portfolio():
             raise DataError('No account records found')
 
         return start
+
+    def add_deposit(self, tx):
+        self.performance[tx.day]['dayDeposits'] += tx.total
 
 
 class DataError(Exception):

@@ -7,7 +7,9 @@ tables = [
     'accounts',
     'accountTypes',
     'investors',
-    'marketDays'
+    'marketDays',
+    'assets',
+    'assetClasses'
 ]
 
 

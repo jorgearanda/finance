@@ -13,6 +13,8 @@ def create_account():
     cur.execute('''
                 INSERT INTO accounts (name, accountType, investor, dateCreated)
                 VALUES ('RRSP1', 'RRSP', 'First Last', '2016-10-10');''')
+    cur.execute('''INSERT INTO assetClasses (name, domesticCurrency) VALUES ('Cash', true);''')
+    cur.execute('''INSERT INTO assets (ticker, class) VALUES ('Cash', 'Cash');''')
     unit_utils.conn.commit()
     cur.close()
 
@@ -35,6 +37,15 @@ def populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 12, 31
     cur.close()
 
 
+def populate_deposits():
+    cur = unit_utils.conn.cursor()
+    cur.execute('''
+                INSERT INTO transactions (day, txType, account, source, target, units, unitPrice, commission, total)
+                VALUES ('2016-10-11', 'deposit', 'RRSP1', null, 'Cash', null, null, null, 1000);''')
+    unit_utils.conn.commit()
+    cur.close()
+
+
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_simple_portfolio_creation():
     with freeze_time(date(2016, 10, 15)):
@@ -46,8 +57,9 @@ def test_simple_portfolio_creation():
     assert pf is not None
     assert pf.performance is not None
     assert len(pf.performance) == 6
-    assert pf.performance[0]['date'] == date(2016, 10, 10)
-    assert pf.performance[-1]['date'] == date(2016, 10, 15)
+    dates = list(pf.performance.items())
+    assert dates[0][0] == date(2016, 10, 10)
+    assert dates[-1][0] == date(2016, 10, 15)
 
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
@@ -61,8 +73,9 @@ def test_single_account_portfolio_creation():
     assert pf is not None
     assert pf.performance is not None
     assert len(pf.performance) == 6
-    assert pf.performance[0]['date'] == date(2016, 10, 10)
-    assert pf.performance[-1]['date'] == date(2016, 10, 15)
+    dates = list(pf.performance.items())
+    assert dates[0][0] == date(2016, 10, 10)
+    assert dates[-1][0] == date(2016, 10, 15)
 
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
@@ -102,3 +115,17 @@ def test_portfolio_class_raises_when_market_days_end_before_today():
         populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 10, 15))
 
         assert_raises(DataError, Portfolio, None, 'test', unit_utils.conn)
+
+
+@with_setup(unit_utils.setup, unit_utils.teardown)
+def test_day_deposits():
+    with freeze_time(date(2016, 10, 15)):
+        create_account()
+        populate_market_days()
+        populate_deposits()
+
+        pf = Portfolio(env='test', conn=unit_utils.conn)
+
+    assert pf.performance[date(2016, 10, 10)]['dayDeposits'] == 0
+    assert pf.performance[date(2016, 10, 11)]['dayDeposits'] == 1000
+    assert pf.performance[date(2016, 10, 12)]['dayDeposits'] == 0
