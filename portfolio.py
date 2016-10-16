@@ -16,20 +16,18 @@ class Portfolio():
 
     def load(self):
         self.load_market_days()
+        self.load_transactions()
 
     def load_market_days(self):
-        if self.account is None:
-            self.date_created = self.get_earliest_account_start()
-        else:
-            self.date_created = self.get_account_start()
+        self.date_created = self.get_date_created()
 
         cur = self.conn.cursor()
         cur.execute('''
                     SELECT day, open
                     FROM marketDays
-                    WHERE day >= %s AND day <= %s
+                    WHERE day >= %(created)s AND day <= %(today)s
                     ORDER BY day;''',
-                    (self.date_created, date.today()))
+                    {'created': self.date_created, 'today': date.today()})
 
         self.performance = [{'date': row[0], 'open': row[1]} for row in cur.fetchall()]
         cur.close()
@@ -39,11 +37,16 @@ class Portfolio():
         if self.performance[-1]['date'] < date.today():
             raise DataError('marketDays table ends before today')
 
-    def get_earliest_account_start(self):
+    def load_transactions(self):
+        pass
+
+    def get_date_created(self):
         cur = self.conn.cursor()
         cur.execute('''
                     SELECT MIN(dateCreated)
-                    FROM accounts;''')
+                    FROM accounts
+                    WHERE %(name)s is null OR name = %(name)s;''',
+                    {'name': self.account})
 
         start = cur.fetchone()[0]
         cur.close()
@@ -52,22 +55,6 @@ class Portfolio():
             raise DataError('No account records found')
 
         return start
-
-    def get_account_start(self):
-        cur = self.conn.cursor()
-        cur.execute('''
-                    SELECT dateCreated
-                    FROM accounts
-                    WHERE name = %s;''',
-                    (self.account,))
-
-        if cur.rowcount != 1:
-            raise DataError('No account record found for {name}'.format(name=self.account))
-
-        account_start = cur.fetchone()[0]
-        cur.close()
-
-        return account_start
 
 
 class DataError(Exception):
