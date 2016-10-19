@@ -4,6 +4,7 @@ import config
 
 conn = None
 tables = [
+    'transactions',
     'accounts',
     'accountTypes',
     'investors',

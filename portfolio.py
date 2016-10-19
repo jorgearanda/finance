@@ -23,6 +23,7 @@ class Portfolio():
     def load(self):
         self.load_market_days()
         self.load_transactions()
+        self.calculate_dailies()
 
     def load_market_days(self):
         cur = self.conn.cursor()
@@ -62,6 +63,12 @@ class Portfolio():
         for tx in transactions:
             if tx.txType == 'deposit':
                 self.add_deposit(tx)
+
+    def calculate_dailies(self):
+        previous_data = {'totalDeposits': 0}
+        for day, data in self.performance.items():
+            data['totalDeposits'] = data['dayDeposits'] + previous_data['totalDeposits']
+            previous_data = data
 
     def get_date_created(self):
         cur = self.conn.cursor()

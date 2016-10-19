@@ -129,3 +129,17 @@ def test_day_deposits():
     assert pf.performance[date(2016, 10, 10)]['dayDeposits'] == 0
     assert pf.performance[date(2016, 10, 11)]['dayDeposits'] == 1000
     assert pf.performance[date(2016, 10, 12)]['dayDeposits'] == 0
+
+
+@with_setup(unit_utils.setup, unit_utils.teardown)
+def test_total_deposits():
+    with freeze_time(date(2016, 10, 15)):
+        create_account()
+        populate_market_days()
+        populate_deposits()
+
+        pf = Portfolio(env='test', conn=unit_utils.conn)
+
+    assert pf.performance[date(2016, 10, 10)]['totalDeposits'] == 0
+    assert pf.performance[date(2016, 10, 11)]['totalDeposits'] == 1000
+    assert pf.performance[date(2016, 10, 12)]['totalDeposits'] == 1000
