@@ -1,4 +1,5 @@
 from collections import namedtuple, OrderedDict
+from copy import deepcopy
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 import psycopg2
@@ -38,6 +39,7 @@ class Portfolio():
             self.performance[row[0]] = {
                 'date': row[0],
                 'open': row[1],
+                'assets': {},
                 'dayDeposits': Decimal(0.0)
             }
         cur.close()
@@ -63,11 +65,21 @@ class Portfolio():
         for tx in transactions:
             if tx.txType == 'deposit':
                 self.add_deposit(tx)
+            elif tx.txType == 'buy':
+                self.add_buy(tx)
 
     def calculate_dailies(self):
-        previous_data = {'totalDeposits': 0}
+        previous_data = {'totalDeposits': 0, 'assets': {}}
         for day, data in self.performance.items():
             data['totalDeposits'] = data['dayDeposits'] + previous_data['totalDeposits']
+            for ticker, asset in previous_data['assets'].items():
+                if data['assets'].get(ticker) is None:
+                    data['assets'][ticker] = deepcopy(asset)
+                else:
+                    data['assets'][ticker]['units'] += asset['units']
+                    data['assets'][ticker]['paidValue'] += asset['paidValue']
+                    data['assets'][ticker]['averagePrice'] = \
+                        data['assets'][ticker]['paidValue'] / data['assets'][ticker]['units']
             previous_data = data
 
     def get_date_created(self):
@@ -88,6 +100,17 @@ class Portfolio():
 
     def add_deposit(self, tx):
         self.performance[tx.day]['dayDeposits'] += tx.total
+
+    def add_buy(self, tx):
+        if self.performance[tx.day]['assets'].get(tx.target) is None:
+            self.performance[tx.day]['assets'][tx.target] = {
+                'units': 0,
+                'paidValue': 0,
+                'averagePrice': 0
+            }
+        self.performance[tx.day]['assets'][tx.target]['units'] += tx.units
+        self.performance[tx.day]['assets'][tx.target]['paidValue'] += tx.total
+        self.performance[tx.day]['assets'][tx.target]['averagePrice'] += tx.total / tx.units
 
 
 class DataError(Exception):

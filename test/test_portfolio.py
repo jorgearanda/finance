@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from decimal import Decimal
 from freezegun import freeze_time
 from nose.tools import with_setup, assert_raises
 
@@ -14,7 +15,9 @@ def create_account():
                 INSERT INTO accounts (name, accountType, investor, dateCreated)
                 VALUES ('RRSP1', 'RRSP', 'First Last', '2016-10-10');''')
     cur.execute('''INSERT INTO assetClasses (name, domesticCurrency) VALUES ('Cash', true);''')
+    cur.execute('''INSERT INTO assetClasses (name, domesticCurrency) VALUES ('Domestic Equity', true);''')
     cur.execute('''INSERT INTO assets (ticker, class) VALUES ('Cash', 'Cash');''')
+    cur.execute('''INSERT INTO assets (ticker, class) VALUES ('VVV.TO', 'Domestic Equity');''')
     unit_utils.conn.commit()
     cur.close()
 
@@ -42,6 +45,18 @@ def populate_deposits():
     cur.execute('''
                 INSERT INTO transactions (day, txType, account, source, target, units, unitPrice, commission, total)
                 VALUES ('2016-10-11', 'deposit', 'RRSP1', null, 'Cash', null, null, null, 1000);''')
+    unit_utils.conn.commit()
+    cur.close()
+
+
+def populate_buys():
+    cur = unit_utils.conn.cursor()
+    cur.execute('''
+                INSERT INTO transactions (day, txType, account, source, target, units, unitPrice, commission, total)
+                VALUES ('2016-10-12', 'buy', 'RRSP1', 'Cash', 'VVV.TO', 10, 12.34, 0.03, 123.43);''')
+    cur.execute('''
+                INSERT INTO transactions (day, txType, account, source, target, units, unitPrice, commission, total)
+                VALUES ('2016-10-14', 'buy', 'RRSP1', 'Cash', 'VVV.TO', 20, 12.34, 0.03, 246.86);''')
     unit_utils.conn.commit()
     cur.close()
 
@@ -143,3 +158,22 @@ def test_total_deposits():
     assert pf.performance[date(2016, 10, 10)]['totalDeposits'] == 0
     assert pf.performance[date(2016, 10, 11)]['totalDeposits'] == 1000
     assert pf.performance[date(2016, 10, 12)]['totalDeposits'] == 1000
+
+
+@with_setup(unit_utils.setup, unit_utils.teardown)
+def test_buys_propagate_to_assets_subdictionary():
+    with freeze_time(date(2016, 10, 15)):
+        create_account()
+        populate_market_days()
+        populate_buys()
+
+        pf = Portfolio(env='test', conn=unit_utils.conn)
+
+    assert len(pf.performance[date(2016, 10, 11)]['assets']) == 0
+    assert len(pf.performance[date(2016, 10, 12)]['assets']) == 1
+    assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['units'] == 10
+    assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['paidValue'] == Decimal('123.43')
+    assert pf.performance[date(2016, 10, 13)]['assets']['VVV.TO']['units'] == 10
+    assert pf.performance[date(2016, 10, 13)]['assets']['VVV.TO']['paidValue'] == Decimal('123.43')
+    assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['units'] == 30
+    assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['paidValue'] == Decimal('370.29')
