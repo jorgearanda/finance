@@ -40,7 +40,8 @@ class Portfolio():
                 'date': row[0],
                 'open': row[1],
                 'assets': {},
-                'dayDeposits': Decimal(0.0)
+                'dayDeposits': Decimal(0.0),
+                'dayDividends': Decimal(0.0)
             }
         cur.close()
 
@@ -67,11 +68,20 @@ class Portfolio():
                 self.add_deposit(tx)
             elif tx.txType == 'buy':
                 self.add_buy(tx)
+            elif tx.txType == 'dividend':
+                self.add_dividend(tx)
 
     def calculate_dailies(self):
-        previous_data = {'totalDeposits': 0, 'assets': {}}
+        previous_data = {
+            'cash': 0,
+            'totalDeposits': 0,
+            'totalDividends': 0,
+            'assets': {}
+        }
         for day, data in self.performance.items():
             data['totalDeposits'] = data['dayDeposits'] + previous_data['totalDeposits']
+            data['totalDividends'] = data['dayDividends'] + previous_data['totalDividends']
+            data['cash'] = data['totalDeposits'] + data['totalDividends']
             for ticker, asset in previous_data['assets'].items():
                 if data['assets'].get(ticker) is None:
                     data['assets'][ticker] = deepcopy(asset)
@@ -80,6 +90,8 @@ class Portfolio():
                     data['assets'][ticker]['positionCost'] += asset['positionCost']
                     data['assets'][ticker]['averagePrice'] = \
                         data['assets'][ticker]['positionCost'] / data['assets'][ticker]['units']
+            for ticker in data['assets'].keys():
+                data['cash'] -= data['assets'][ticker]['positionCost']
             previous_data = data
 
     def get_date_created(self):
@@ -111,6 +123,9 @@ class Portfolio():
         self.performance[tx.day]['assets'][tx.target]['units'] += tx.units
         self.performance[tx.day]['assets'][tx.target]['positionCost'] += tx.total
         self.performance[tx.day]['assets'][tx.target]['averagePrice'] += tx.total / tx.units
+
+    def add_dividend(self, tx):
+        self.performance[tx.day]['dayDividends'] += tx.total
 
 
 class DataError(Exception):

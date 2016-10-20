@@ -49,6 +49,15 @@ def populate_deposits():
     cur.close()
 
 
+def populate_dividends():
+    cur = unit_utils.conn.cursor()
+    cur.execute('''
+                INSERT INTO transactions (day, txType, account, source, target, units, unitPrice, commission, total)
+                VALUES ('2016-10-14', 'dividend', 'RRSP1', 'VVV.TO', 'Cash', 10, 0.2, 0, 2.0);''')
+    unit_utils.conn.commit()
+    cur.close()
+
+
 def populate_buys():
     cur = unit_utils.conn.cursor()
     cur.execute('''
@@ -177,3 +186,37 @@ def test_buys_propagate_to_assets_subdictionary():
     assert pf.performance[date(2016, 10, 13)]['assets']['VVV.TO']['positionCost'] == Decimal('123.43')
     assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['units'] == 30
     assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['positionCost'] == Decimal('370.29')
+
+
+@with_setup(unit_utils.setup, unit_utils.teardown)
+def test_dividends():
+    with freeze_time(date(2016, 10, 15)):
+        create_account()
+        populate_market_days()
+        populate_dividends()
+
+        pf = Portfolio(env='test', conn=unit_utils.conn)
+
+    assert pf.performance[date(2016, 10, 12)]['dayDividends'] == 0
+    assert pf.performance[date(2016, 10, 12)]['totalDividends'] == 0
+    assert pf.performance[date(2016, 10, 14)]['dayDividends'] == 2.0
+    assert pf.performance[date(2016, 10, 14)]['totalDividends'] == 2.0
+
+
+@with_setup(unit_utils.setup, unit_utils.teardown)
+def test_cash():
+    with freeze_time(date(2016, 10, 15)):
+        create_account()
+        populate_market_days()
+        populate_deposits()
+        populate_buys()
+        populate_dividends()
+
+        pf = Portfolio(env='test', conn=unit_utils.conn)
+
+    assert pf.performance[date(2016, 10, 10)]['cash'] == 0
+    assert pf.performance[date(2016, 10, 11)]['cash'] == 1000
+    assert pf.performance[date(2016, 10, 12)]['cash'] == Decimal('876.57')
+    assert pf.performance[date(2016, 10, 13)]['cash'] == Decimal('876.57')
+    assert pf.performance[date(2016, 10, 14)]['cash'] == Decimal('631.71')
+    assert pf.performance[date(2016, 10, 15)]['cash'] == Decimal('631.71')
