@@ -77,9 +77,9 @@ class Portfolio():
                     data['assets'][ticker] = deepcopy(asset)
                 else:
                     data['assets'][ticker]['units'] += asset['units']
-                    data['assets'][ticker]['paidValue'] += asset['paidValue']
+                    data['assets'][ticker]['positionCost'] += asset['positionCost']
                     data['assets'][ticker]['averagePrice'] = \
-                        data['assets'][ticker]['paidValue'] / data['assets'][ticker]['units']
+                        data['assets'][ticker]['positionCost'] / data['assets'][ticker]['units']
             previous_data = data
 
     def get_date_created(self):
@@ -105,11 +105,11 @@ class Portfolio():
         if self.performance[tx.day]['assets'].get(tx.target) is None:
             self.performance[tx.day]['assets'][tx.target] = {
                 'units': 0,
-                'paidValue': 0,
+                'positionCost': 0,
                 'averagePrice': 0
             }
         self.performance[tx.day]['assets'][tx.target]['units'] += tx.units
-        self.performance[tx.day]['assets'][tx.target]['paidValue'] += tx.total
+        self.performance[tx.day]['assets'][tx.target]['positionCost'] += tx.total
         self.performance[tx.day]['assets'][tx.target]['averagePrice'] += tx.total / tx.units
 
 

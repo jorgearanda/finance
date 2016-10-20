@@ -172,8 +172,8 @@ def test_buys_propagate_to_assets_subdictionary():
     assert len(pf.performance[date(2016, 10, 11)]['assets']) == 0
     assert len(pf.performance[date(2016, 10, 12)]['assets']) == 1
     assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['units'] == 10
-    assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['paidValue'] == Decimal('123.43')
+    assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['positionCost'] == Decimal('123.43')
     assert pf.performance[date(2016, 10, 13)]['assets']['VVV.TO']['units'] == 10
-    assert pf.performance[date(2016, 10, 13)]['assets']['VVV.TO']['paidValue'] == Decimal('123.43')
+    assert pf.performance[date(2016, 10, 13)]['assets']['VVV.TO']['positionCost'] == Decimal('123.43')
     assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['units'] == 30
-    assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['paidValue'] == Decimal('370.29')
+    assert pf.performance[date(2016, 10, 14)]['assets']['VVV.TO']['positionCost'] == Decimal('370.29')
