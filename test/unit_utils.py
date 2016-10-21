@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2.extras import NamedTupleCursor
 
 import config
 
@@ -25,7 +26,7 @@ def clean_postgres():
 
 def setup():
     global conn
-    conn = psycopg2.connect(database=config.database['test'])
+    conn = psycopg2.connect(database=config.database['test'], cursor_factory=NamedTupleCursor)
     clean_postgres()
 
 

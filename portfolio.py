@@ -3,17 +3,15 @@ from copy import deepcopy
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 import psycopg2
+from psycopg2.extras import NamedTupleCursor
 
 import config
-
-
-Transaction = namedtuple('Transaction', 'day, txType, account, source, target, units, unitPrice, commission, total')
 
 
 class Portfolio():
     def __init__(self, account=None, env='dev', conn=None):
         if conn is None:
-            self.conn = psycopg2.connect(database=config.database[env])
+            self.conn = psycopg2.connect(database=config.database[env], cursor_factory=NamedTupleCursor)
         else:
             self.conn = conn
         self.account = account
@@ -23,6 +21,7 @@ class Portfolio():
 
     def load(self):
         self.load_market_days()
+        self.load_daily_prices()
         self.load_transactions()
         self.calculate_dailies()
 
@@ -36,9 +35,10 @@ class Portfolio():
                     {'created': self.date_created, 'today': date.today()})
 
         for row in cur.fetchall():
-            self.performance[row[0]] = {
-                'date': row[0],
-                'open': row[1],
+            print(row)
+            self.performance[row.day] = {
+                'date': row.day,
+                'open': row.open,
                 'assets': {},
                 'dayDeposits': Decimal(0.0),
                 'dayDividends': Decimal(0.0)
@@ -51,25 +51,27 @@ class Portfolio():
         if dates[-1][0] < date.today():
             raise DataError('marketDays table ends before today')
 
+    def load_daily_prices(self):
+        pass
+
     def load_transactions(self):
         cur = self.conn.cursor()
         cur.execute('''
-                    SELECT day, txType, account, source, target, units, unitPrice, commission, total
+                    SELECT day, txtype, account, source, target, units, unitprice, commission, total
                     FROM transactions
                     WHERE %(account)s is null OR account = %(account)s
                     ORDER BY day;''',
                     {'account': self.account})
 
-        transactions = [Transaction(*values) for values in cur.fetchall()]
-        cur.close()
-
-        for tx in transactions:
-            if tx.txType == 'deposit':
+        for tx in cur.fetchall():
+            if tx.txtype == 'deposit':
                 self.add_deposit(tx)
-            elif tx.txType == 'buy':
+            elif tx.txtype == 'buy':
                 self.add_buy(tx)
-            elif tx.txType == 'dividend':
+            elif tx.txtype == 'dividend':
                 self.add_dividend(tx)
+
+        cur.close()
 
     def calculate_dailies(self):
         previous_data = {
