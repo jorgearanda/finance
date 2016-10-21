@@ -40,6 +40,18 @@ def populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 12, 31
     cur.close()
 
 
+def populate_asset_prices():
+    cur = unit_utils.conn.cursor()
+    cur.execute('''INSERT INTO assetPrices (ticker, day, ask) VALUES ('VVV.TO', '2016-10-10', 13.0);''')
+    cur.execute('''INSERT INTO assetPrices (ticker, day, ask) VALUES ('VVV.TO', '2016-10-11', 12.4);''')
+    cur.execute('''INSERT INTO assetPrices (ticker, day, ask) VALUES ('VVV.TO', '2016-10-12', 12.25);''')
+    cur.execute('''INSERT INTO assetPrices (ticker, day, ask) VALUES ('VVV.TO', '2016-10-13', 12.50);''')
+    cur.execute('''INSERT INTO assetPrices (ticker, day, ask) VALUES ('VVV.TO', '2016-10-14', 13.10);''')
+    cur.execute('''INSERT INTO assetPrices (ticker, day, ask) VALUES ('VVV.TO', '2016-10-15', 13.20);''')
+    unit_utils.conn.commit()
+    cur.close()
+
+
 def populate_deposits():
     cur = unit_utils.conn.cursor()
     cur.execute('''
@@ -174,11 +186,11 @@ def test_buys_propagate_to_assets_subdictionary():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_asset_prices()
         populate_buys()
 
         pf = Portfolio(env='test', conn=unit_utils.conn)
 
-    assert len(pf.performance[date(2016, 10, 11)]['assets']) == 0
     assert len(pf.performance[date(2016, 10, 12)]['assets']) == 1
     assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['units'] == 10
     assert pf.performance[date(2016, 10, 12)]['assets']['VVV.TO']['positionCost'] == Decimal('123.43')
@@ -208,6 +220,7 @@ def test_cash():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_asset_prices()
         populate_deposits()
         populate_buys()
         populate_dividends()

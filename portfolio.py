@@ -35,13 +35,16 @@ class Portfolio():
                     {'created': self.date_created, 'today': date.today()})
 
         for row in cur.fetchall():
-            print(row)
             self.performance[row.day] = {
                 'date': row.day,
                 'open': row.open,
                 'assets': {},
+                'cash': Decimal(0.0),
                 'dayDeposits': Decimal(0.0),
-                'dayDividends': Decimal(0.0)
+                'totalDeposits': Decimal(0.0),
+                'dayDividends': Decimal(0.0),
+                'totalDividends': Decimal(0.0),
+                'marketValue': Decimal(0.0)
             }
         cur.close()
 
@@ -52,7 +55,22 @@ class Portfolio():
             raise DataError('marketDays table ends before today')
 
     def load_daily_prices(self):
-        pass
+        cur = self.conn.cursor()
+        cur.execute('''
+                    SELECT ticker, day, ask
+                    FROM assetPrices
+                    ORDER BY day;''')
+
+        for asset_price in cur.fetchall():
+            self.performance[asset_price.day]['assets'][asset_price.ticker] = {
+                'units': 0,
+                'positionCost': 0,
+                'averagePrice': 0,
+                'currentPrice': asset_price.ask,
+                'marketValue': 0
+            }
+
+        cur.close()
 
     def load_transactions(self):
         cur = self.conn.cursor()
@@ -74,27 +92,34 @@ class Portfolio():
         cur.close()
 
     def calculate_dailies(self):
-        previous_data = {
-            'cash': 0,
-            'totalDeposits': 0,
-            'totalDividends': 0,
-            'assets': {}
-        }
         for day, data in self.performance.items():
-            data['totalDeposits'] = data['dayDeposits'] + previous_data['totalDeposits']
-            data['totalDividends'] = data['dayDividends'] + previous_data['totalDividends']
+            if day == self.date_created:
+                data['totalDeposits'] = data['dayDeposits']
+                data['cash'] = data['totalDeposits'] + data['totalDividends']
+                data['marketValue'] = data['cash']
+                continue
+            prev = self.performance[day - timedelta(days=1)]
+            data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
+            data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
-            for ticker, asset in previous_data['assets'].items():
+            for ticker, asset in prev['assets'].items():
                 if data['assets'].get(ticker) is None:
-                    data['assets'][ticker] = deepcopy(asset)
-                else:
-                    data['assets'][ticker]['units'] += asset['units']
-                    data['assets'][ticker]['positionCost'] += asset['positionCost']
-                    data['assets'][ticker]['averagePrice'] = \
-                        data['assets'][ticker]['positionCost'] / data['assets'][ticker]['units']
+                    data['assets'][ticker] = {
+                        'units': 0,
+                        'positionCost': 0,
+                        'currentPrice': asset['currentPrice']
+                    }
+            for ticker, asset in data['assets'].items():
+                if prev['assets'].get(ticker) is not None:
+                    asset['units'] += prev['assets'][ticker]['units']
+                    asset['positionCost'] += prev['assets'][ticker]['positionCost']
+                if asset['units'] > 0:
+                    asset['averagePrice'] = asset['positionCost'] / asset['units']
+                    asset['marketValue'] = asset['units'] * asset['currentPrice']
             for ticker in data['assets'].keys():
                 data['cash'] -= data['assets'][ticker]['positionCost']
-            previous_data = data
+                data['marketValue'] += data['assets'][ticker]['marketValue']
+            data['marketValue'] += data['cash']
 
     def get_date_created(self):
         cur = self.conn.cursor()
@@ -116,12 +141,6 @@ class Portfolio():
         self.performance[tx.day]['dayDeposits'] += tx.total
 
     def add_buy(self, tx):
-        if self.performance[tx.day]['assets'].get(tx.target) is None:
-            self.performance[tx.day]['assets'][tx.target] = {
-                'units': 0,
-                'positionCost': 0,
-                'averagePrice': 0
-            }
         self.performance[tx.day]['assets'][tx.target]['units'] += tx.units
         self.performance[tx.day]['assets'][tx.target]['positionCost'] += tx.total
         self.performance[tx.day]['assets'][tx.target]['averagePrice'] += tx.total / tx.units
