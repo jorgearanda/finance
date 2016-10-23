@@ -16,16 +16,26 @@ class Portfolio():
             self.conn = conn
         self.account = account
         self.date_created = self.get_date_created()
+        self.prices = OrderedDict()
         self.performance = OrderedDict()
+        self.deposits = OrderedDict()
+        self.buys = OrderedDict()
+        self.sales = OrderedDict()
+        self.dividends = OrderedDict()
         self.load()
 
     def load(self):
         self.load_market_days()
         self.load_daily_prices()
         self.load_transactions()
+        self.load_assets_in_performance()
         self.calculate_dailies()
 
     def load_market_days(self):
+        '''
+        Create the skeleton of self.performance: an OrderedDict with daily entries
+        which will be populated with the performance data for this portfolio
+        '''
         cur = self.conn.cursor()
         cur.execute('''
                     SELECT day, open
@@ -36,7 +46,6 @@ class Portfolio():
 
         for row in cur.fetchall():
             self.performance[row.day] = {
-                'date': row.day,
                 'open': row.open,
                 'assets': {},
                 'cash': Decimal(0.0),
@@ -62,17 +71,16 @@ class Portfolio():
                     ORDER BY day;''')
 
         for asset_price in cur.fetchall():
-            self.performance[asset_price.day]['assets'][asset_price.ticker] = {
-                'units': 0,
-                'positionCost': 0,
-                'averagePrice': 0,
-                'currentPrice': asset_price.ask,
-                'marketValue': 0
-            }
+            self.prices.setdefault(asset_price.day, {})
+            self.prices[asset_price.day][asset_price.ticker] = asset_price.ask
 
         cur.close()
 
     def load_transactions(self):
+        '''
+        Get all transactions for the account(s) in question, and populate the relevant
+        data structures with their details.
+        '''
         cur = self.conn.cursor()
         cur.execute('''
                     SELECT day, txtype, account, source, target, units, unitprice, commission, total
@@ -91,31 +99,72 @@ class Portfolio():
 
         cur.close()
 
-    def calculate_dailies(self):
+    def add_deposit(self, tx):
+        self.deposits.setdefault(tx.day, {}).setdefault('amount', Decimal(0))
+        self.deposits[tx.day]['amount'] += tx.total
+        self.performance[tx.day]['dayDeposits'] += tx.total
+
+    def add_buy(self, tx):
+        empty_buy = {
+            'units': 0,
+            'positionCost': 0,
+            'averagePrice': 0
+        }
+        self.buys.setdefault(tx.day, {}).setdefault(tx.target, empty_buy)
+        self.buys[tx.day][tx.target]['units'] += tx.units
+        self.buys[tx.day][tx.target]['positionCost'] += tx.total
+        self.buys[tx.day][tx.target]['averagePrice'] += tx.total / tx.units
+
+    def add_dividend(self, tx):
+        self.dividends.setdefault(tx.day, {}).setdefault('amount', Decimal(0))
+        self.dividends[tx.day]['amount'] += tx.total
+        self.performance[tx.day]['dayDividends'] += tx.total
+
+    def load_assets_in_performance(self):
+        prev_data = {'assets': {}}
         for day, data in self.performance.items():
-            if day == self.date_created:
-                data['totalDeposits'] = data['dayDeposits']
-                data['cash'] = data['totalDeposits'] + data['totalDividends']
-                data['marketValue'] = data['cash']
+            if not data['open']:
+                data['assets'] = deepcopy(prev_data['assets'])
                 continue
+
+            buy_data = self.buys.get(day, {})
+            for ticker, asset_data in prev_data['assets'].items():
+                data['assets'][ticker] = deepcopy(asset_data)
+
+            for ticker, buy_data in self.buys.get(day, {}).items():
+                data['assets'].setdefault(ticker, {
+                    'units': 0,
+                    'positionCost': 0,
+                    'averagePrice': 0
+                })
+                data['assets'][ticker]['units'] += buy_data['units']
+                data['assets'][ticker]['positionCost'] += buy_data['positionCost']
+                data['assets'][ticker]['averagePrice'] = \
+                    data['assets'][ticker]['positionCost'] / data['assets'][ticker]['units']
+
+            # TODO: Include sales
+
+            for ticker, ticker_data in data['assets'].items():
+                ticker_data['currentPrice'] = self.prices.get(day, {}).get(ticker)
+                if ticker_data['currentPrice'] is None:
+                    ticker_data['currentPrice'] = prev_data['assets'][ticker]['currentPrice']
+                ticker_data['marketValue'] = ticker_data['units'] * ticker_data['currentPrice']
+
+            prev_data = data
+
+    def calculate_dailies(self):
+        first_day = self.performance[self.date_created]
+        first_day['totalDeposits'] = first_day['dayDeposits']
+        first_day['totalDividends'] = first_day['dayDividends']
+        first_day['cash'] = first_day['totalDeposits'] + first_day['totalDividends']
+        first_day['marketValue'] = first_day['cash']
+
+        for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
             data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
-            for ticker, asset in prev['assets'].items():
-                if data['assets'].get(ticker) is None:
-                    data['assets'][ticker] = {
-                        'units': 0,
-                        'positionCost': 0,
-                        'currentPrice': asset['currentPrice']
-                    }
-            for ticker, asset in data['assets'].items():
-                if prev['assets'].get(ticker) is not None:
-                    asset['units'] += prev['assets'][ticker]['units']
-                    asset['positionCost'] += prev['assets'][ticker]['positionCost']
-                if asset['units'] > 0:
-                    asset['averagePrice'] = asset['positionCost'] / asset['units']
-                    asset['marketValue'] = asset['units'] * asset['currentPrice']
+
             for ticker in data['assets'].keys():
                 data['cash'] -= data['assets'][ticker]['positionCost']
                 data['marketValue'] += data['assets'][ticker]['marketValue']
@@ -136,17 +185,6 @@ class Portfolio():
             raise DataError('No account records found')
 
         return start
-
-    def add_deposit(self, tx):
-        self.performance[tx.day]['dayDeposits'] += tx.total
-
-    def add_buy(self, tx):
-        self.performance[tx.day]['assets'][tx.target]['units'] += tx.units
-        self.performance[tx.day]['assets'][tx.target]['positionCost'] += tx.total
-        self.performance[tx.day]['assets'][tx.target]['averagePrice'] += tx.total / tx.units
-
-    def add_dividend(self, tx):
-        self.performance[tx.day]['dayDividends'] += tx.total
 
 
 class DataError(Exception):
