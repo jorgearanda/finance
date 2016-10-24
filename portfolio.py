@@ -158,6 +158,10 @@ class Portfolio():
         first_day['totalDividends'] = first_day['dayDividends']
         first_day['cash'] = first_day['totalDeposits'] + first_day['totalDividends']
         first_day['marketValue'] = first_day['cash']
+        first_day['dayProfitOrLoss'] = Decimal(0)
+        first_day['dayReturns'] = Decimal(0)
+        first_day['profitOrLoss'] = Decimal(0)
+        first_day['ttwr'] = Decimal(0)
 
         for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
@@ -169,6 +173,10 @@ class Portfolio():
                 data['cash'] -= data['assets'][ticker]['positionCost']
                 data['marketValue'] += data['assets'][ticker]['marketValue']
             data['marketValue'] += data['cash']
+            data['dayProfitOrLoss'] = data['marketValue'] - data['dayDeposits'] - prev['marketValue']
+            data['dayReturns'] = data['dayProfitOrLoss'] / prev['marketValue']
+            data['profitOrLoss'] = data['marketValue'] - data['totalDeposits']
+            data['ttwr'] = (prev['ttwr'] + 1) * (data['dayReturns'] + 1) - 1
 
     def get_date_created(self):
         cur = self.conn.cursor()
