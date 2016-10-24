@@ -7,6 +7,10 @@ from portfolio import Portfolio, DataError
 from test import unit_utils
 
 
+TWO_DECIMALS = Decimal(10) ** -2
+FOUR_DECIMALS = Decimal(10) ** -4
+
+
 def create_account():
     cur = unit_utils.conn.cursor()
     cur.execute('''INSERT INTO accountTypes (name, tax) VALUES ('RRSP', 'deferred');''')
@@ -56,7 +60,7 @@ def populate_deposits():
     cur = unit_utils.conn.cursor()
     cur.execute('''
                 INSERT INTO transactions (day, txType, account, source, target, units, unitPrice, commission, total)
-                VALUES ('2016-10-11', 'deposit', 'RRSP1', null, 'Cash', null, null, null, 1000);''')
+                VALUES ('2016-10-10', 'deposit', 'RRSP1', null, 'Cash', null, null, null, 1000);''')
     unit_utils.conn.commit()
     cur.close()
 
@@ -87,6 +91,7 @@ def test_simple_portfolio_creation():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_deposits()
 
         pf = Portfolio(env='test', conn=unit_utils.conn)
 
@@ -103,6 +108,7 @@ def test_single_account_portfolio_creation():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_deposits()
 
         pf = Portfolio(account='RRSP1', env='test', conn=unit_utils.conn)
 
@@ -119,6 +125,7 @@ def test_portfolio_class_connects_if_not_given_connection():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_deposits()
 
         pf = Portfolio(env='test')
 
@@ -149,6 +156,7 @@ def test_portfolio_class_raises_when_market_days_end_before_today():
     with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 10, 15))
+        populate_deposits()
 
         assert_raises(DataError, Portfolio, None, 'test', unit_utils.conn)
 
@@ -162,9 +170,8 @@ def test_day_deposits():
 
         pf = Portfolio(env='test', conn=unit_utils.conn)
 
-    assert pf.performance[date(2016, 10, 10)]['dayDeposits'] == 0
-    assert pf.performance[date(2016, 10, 11)]['dayDeposits'] == 1000
-    assert pf.performance[date(2016, 10, 12)]['dayDeposits'] == 0
+    assert pf.performance[date(2016, 10, 10)]['dayDeposits'] == 1000
+    assert pf.performance[date(2016, 10, 11)]['dayDeposits'] == 0
 
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
@@ -176,7 +183,7 @@ def test_total_deposits():
 
         pf = Portfolio(env='test', conn=unit_utils.conn)
 
-    assert pf.performance[date(2016, 10, 10)]['totalDeposits'] == 0
+    assert pf.performance[date(2016, 10, 10)]['totalDeposits'] == 1000
     assert pf.performance[date(2016, 10, 11)]['totalDeposits'] == 1000
     assert pf.performance[date(2016, 10, 12)]['totalDeposits'] == 1000
 
@@ -186,6 +193,7 @@ def test_buys_propagate_to_assets_subdictionary():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_deposits()
         populate_asset_prices()
         populate_buys()
 
@@ -205,6 +213,7 @@ def test_dividends():
     with freeze_time(date(2016, 10, 15)):
         create_account()
         populate_market_days()
+        populate_deposits()
         populate_dividends()
 
         pf = Portfolio(env='test', conn=unit_utils.conn)
@@ -227,9 +236,32 @@ def test_cash():
 
         pf = Portfolio(env='test', conn=unit_utils.conn)
 
-    assert pf.performance[date(2016, 10, 10)]['cash'] == 0
+    assert pf.performance[date(2016, 10, 10)]['cash'] == 1000
     assert pf.performance[date(2016, 10, 11)]['cash'] == 1000
     assert pf.performance[date(2016, 10, 12)]['cash'] == Decimal('876.57')
     assert pf.performance[date(2016, 10, 13)]['cash'] == Decimal('876.57')
     assert pf.performance[date(2016, 10, 14)]['cash'] == Decimal('631.71')
     assert pf.performance[date(2016, 10, 15)]['cash'] == Decimal('631.71')
+
+
+@with_setup(unit_utils.setup, unit_utils.teardown)
+def test_profits_losses_and_returns():
+    with freeze_time(date(2016, 10, 15)):
+        create_account()
+        populate_market_days()
+        populate_asset_prices()
+        populate_deposits()
+        populate_buys()
+        populate_dividends()
+
+        pf = Portfolio(env='test', conn=unit_utils.conn)
+
+    assert pf.performance[date(2016, 10, 10)]['dayReturns'] == 0
+    assert pf.performance[date(2016, 10, 10)]['dayProfitOrLoss'] == 0
+    assert pf.performance[date(2016, 10, 10)]['profitOrLoss'] == 0
+    assert pf.performance[date(2016, 10, 10)]['ttwr'] == 0
+
+    assert pf.performance[date(2016, 10, 15)]['dayReturns'] == 0
+    assert pf.performance[date(2016, 10, 15)]['dayProfitOrLoss'] == 0
+    assert pf.performance[date(2016, 10, 15)]['profitOrLoss'].quantize(TWO_DECIMALS) == Decimal(24.71).quantize(TWO_DECIMALS)
+    assert pf.performance[date(2016, 10, 15)]['ttwr'].quantize(FOUR_DECIMALS) == Decimal(0.02471).quantize(FOUR_DECIMALS)
