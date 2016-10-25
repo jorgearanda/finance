@@ -265,3 +265,4 @@ def test_profits_losses_and_returns():
     assert pf.performance[date(2016, 10, 15)]['dayProfitOrLoss'] == 0
     assert pf.performance[date(2016, 10, 15)]['profitOrLoss'].quantize(TWO_DECIMALS) == Decimal(24.71).quantize(TWO_DECIMALS)
     assert pf.performance[date(2016, 10, 15)]['ttwr'].quantize(FOUR_DECIMALS) == Decimal(0.02471).quantize(FOUR_DECIMALS)
+    assert pf.performance[date(2016, 10, 15)]['volatility'] is not None

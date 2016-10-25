@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
+import statistics
 
 import config
 
@@ -162,21 +163,49 @@ class Portfolio():
         first_day['dayReturns'] = Decimal(0)
         first_day['profitOrLoss'] = Decimal(0)
         first_day['ttwr'] = Decimal(0)
+        first_day['volatility'] = None
 
+        returns_lists = {}
         for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
             data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
 
-            for ticker in data['assets'].keys():
-                data['cash'] -= data['assets'][ticker]['positionCost']
-                data['marketValue'] += data['assets'][ticker]['marketValue']
+            for ticker, ticker_data in data['assets'].items():
+                data['cash'] -= ticker_data['positionCost']
+                data['marketValue'] += ticker_data['marketValue']
+                ticker_data['profitOrLoss'] = ticker_data['marketValue'] - ticker_data['positionCost']
+                ticker_data['dayProfitOrLoss'] = \
+                    ticker_data['profitOrLoss'] - prev['assets'].get(ticker, {}).get('profitOrLoss', 0)
+                if prev['assets'].get(ticker) is None:
+                    ticker_data['dayReturns'] = None
+                else:
+                    ticker_data['dayReturns'] = \
+                        (ticker_data['currentPrice'] - prev['assets'][ticker]['currentPrice']) / \
+                        prev['assets'][ticker]['currentPrice']
+                    returns_lists.setdefault(ticker, [])
+                    if data['open']:
+                        returns_lists[ticker].append(ticker_data['dayReturns'])
+                    if len(returns_lists[ticker]) > 0:
+                        ticker_data['volatility'] = statistics.pstdev(returns_lists[ticker])
+                    else:
+                        ticker_data['volatility'] = None
+
             data['marketValue'] += data['cash']
             data['dayProfitOrLoss'] = data['marketValue'] - data['dayDeposits'] - prev['marketValue']
             data['dayReturns'] = data['dayProfitOrLoss'] / prev['marketValue']
             data['profitOrLoss'] = data['marketValue'] - data['totalDeposits']
             data['ttwr'] = (prev['ttwr'] + 1) * (data['dayReturns'] + 1) - 1
+
+            if data['open']:
+                returns_lists.setdefault('all', []).append(data['dayReturns'])
+            data['volatility'] = statistics.pstdev(returns_lists['all'])
+            data['percentCash'] = data['cash'] / data['marketValue']
+
+            # One more pass for percentages
+            for ticker, ticker_data in data['assets'].items():
+                ticker_data['percentPortfolio'] = ticker_data['marketValue'] / data['marketValue']
 
     def get_date_created(self):
         cur = self.conn.cursor()
