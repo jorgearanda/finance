@@ -41,7 +41,7 @@ class Portfolio():
         cur.execute('''
                     SELECT day, open
                     FROM marketDays
-                    WHERE day >= %(created)s AND day <= %(today)s
+                    WHERE day >= %(created)s AND day < %(today)s
                     ORDER BY day;''',
                     {'created': self.date_created, 'today': date.today()})
 
@@ -61,8 +61,8 @@ class Portfolio():
         dates = list(self.performance.items())
         if dates[0][0] > self.date_created:
             raise DataError('marketDays table starts after this account was opened')
-        if dates[-1][0] < date.today():
-            raise DataError('marketDays table ends before today')
+        if dates[-1][0] < date.today() - timedelta(days=1):
+            raise DataError('marketDays table ends before yesterday')
 
     def load_daily_prices(self):
         cur = self.conn.cursor()

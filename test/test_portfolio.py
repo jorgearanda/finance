@@ -88,7 +88,7 @@ def populate_buys():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_simple_portfolio_creation():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -105,7 +105,7 @@ def test_simple_portfolio_creation():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_single_account_portfolio_creation():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -122,7 +122,7 @@ def test_single_account_portfolio_creation():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_portfolio_class_connects_if_not_given_connection():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -144,7 +144,7 @@ def test_portfolio_creation_raises_on_no_accounts_with_specific_account_selected
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_portfolio_class_raises_when_account_starts_before_market_days():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days(from_date=date(2016, 10, 11))
 
@@ -152,10 +152,10 @@ def test_portfolio_class_raises_when_account_starts_before_market_days():
 
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
-def test_portfolio_class_raises_when_market_days_end_before_today():
+def test_portfolio_class_raises_when_market_days_end_before_yesterday():
     with freeze_time(date(2016, 10, 16)):
         create_account()
-        populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 10, 15))
+        populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 10, 14))
         populate_deposits()
 
         assert_raises(DataError, Portfolio, None, 'test', unit_utils.conn)
@@ -163,7 +163,7 @@ def test_portfolio_class_raises_when_market_days_end_before_today():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_day_deposits():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -176,7 +176,7 @@ def test_day_deposits():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_total_deposits():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -190,7 +190,7 @@ def test_total_deposits():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_buys_propagate_to_assets_subdictionary():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -210,7 +210,7 @@ def test_buys_propagate_to_assets_subdictionary():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_dividends():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_deposits()
@@ -226,7 +226,7 @@ def test_dividends():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_cash():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_asset_prices()
@@ -246,7 +246,7 @@ def test_cash():
 
 @with_setup(unit_utils.setup, unit_utils.teardown)
 def test_profits_losses_and_returns():
-    with freeze_time(date(2016, 10, 15)):
+    with freeze_time(date(2016, 10, 16)):
         create_account()
         populate_market_days()
         populate_asset_prices()
