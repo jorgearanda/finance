@@ -31,6 +31,7 @@ class Portfolio():
         self.load_transactions()
         self.load_assets_in_performance()
         self.calculate_dailies()
+        self.calculate_deposit_performance()
 
     def load_market_days(self):
         '''
@@ -206,6 +207,14 @@ class Portfolio():
             # One more pass for percentages
             for ticker, ticker_data in data['assets'].items():
                 ticker_data['percentPortfolio'] = ticker_data['marketValue'] / data['marketValue']
+
+    def calculate_deposit_performance(self):
+        yesterday = date.today() - timedelta(days=1)
+        yesterday_perf = self.performance[yesterday]
+        for day, deposit in self.deposits.items():
+            self.deposits[day]['returns'] = (1 + yesterday_perf['ttwr']) / (1 + self.performance[day]['ttwr'])
+            self.deposits[day]['currentValue'] = self.deposits[day]['amount'] * self.deposits[day]['returns']
+            self.deposits[day]['cagr'] = (self.deposits[day]['returns']) ** Decimal(1 / ((yesterday - day).days / 365)) - 1
 
     def get_date_created(self):
         cur = self.conn.cursor()
