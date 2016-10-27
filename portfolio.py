@@ -118,8 +118,8 @@ class Portfolio():
         self.buys[tx.day][tx.target]['averagePrice'] += tx.total / tx.units
 
     def add_dividend(self, tx):
-        self.dividends.setdefault(tx.day, {}).setdefault('amount', Decimal(0))
-        self.dividends[tx.day]['amount'] += tx.total
+        self.dividends.setdefault(tx.day, {}).setdefault(tx.source, Decimal(0))
+        self.dividends[tx.day][tx.source] += tx.total
         self.performance[tx.day]['dayDividends'] += tx.total
 
     def load_assets_in_performance(self):
@@ -192,6 +192,11 @@ class Portfolio():
                         ticker_data['volatility'] = statistics.pstdev(returns_lists[ticker])
                     else:
                         ticker_data['volatility'] = None
+                ticker_data['dividends'] = prev['assets'].get(ticker, {}).get('dividends', 0) + \
+                    self.dividends.get(day, {}).get(ticker, 0)
+                ticker_data['dividendReturns'] = ticker_data['dividends'] / ticker_data['positionCost']
+                ticker_data['appreciationReturns'] = ticker_data['profitOrLoss'] / ticker_data['positionCost']
+                ticker_data['totalReturns'] = ticker_data['dividendReturns'] + ticker_data['appreciationReturns']
 
             data['marketValue'] += data['cash']
             data['dayProfitOrLoss'] = data['marketValue'] - data['dayDeposits'] - prev['marketValue']
