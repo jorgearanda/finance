@@ -217,9 +217,9 @@ class Portfolio():
         yesterday = date.today() - timedelta(days=1)
         yesterday_perf = self.performance[yesterday]
         for day, deposit in self.deposits.items():
-            self.deposits[day]['returns'] = (1 + yesterday_perf['ttwr']) / (1 + self.performance[day]['ttwr'])
-            self.deposits[day]['currentValue'] = self.deposits[day]['amount'] * self.deposits[day]['returns']
-            self.deposits[day]['cagr'] = (self.deposits[day]['returns']) ** Decimal(1 / ((yesterday - day).days / 365)) - 1
+            deposit['returns'] = (1 + yesterday_perf['ttwr']) / (1 + self.performance[day]['ttwr']) - 1
+            deposit['currentValue'] = deposit['amount'] * (1 + deposit['returns'])
+            deposit['cagr'] = (1 + deposit['returns']) ** Decimal(1 / (((yesterday - day).days + 1) / 365)) - 1
 
     def get_date_created(self):
         cur = self.conn.cursor()
