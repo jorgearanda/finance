@@ -2,3 +2,4 @@ coverage
 freezegun
 nose
 psycopg2
+scipy

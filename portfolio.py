@@ -2,8 +2,10 @@ from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from itertools import combinations
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
+from scipy.stats import pearsonr
 import statistics
 
 import config
@@ -23,6 +25,8 @@ class Portfolio():
         self.buys = OrderedDict()
         self.sales = OrderedDict()
         self.dividends = OrderedDict()
+        self.tickers = set()
+        self.correlations = OrderedDict()
         self.load()
 
     def load(self):
@@ -32,6 +36,7 @@ class Portfolio():
         self.load_assets_in_performance()
         self.calculate_dailies()
         self.calculate_deposit_performance()
+        self.calculate_correlations()
 
     def load_market_days(self):
         '''
@@ -75,6 +80,7 @@ class Portfolio():
         for asset_price in cur.fetchall():
             self.prices.setdefault(asset_price.day, {})
             self.prices[asset_price.day][asset_price.ticker] = asset_price.ask
+            self.tickers.add(asset_price.ticker)
 
         cur.close()
 
@@ -236,6 +242,20 @@ class Portfolio():
             raise DataError('No account records found')
 
         return start
+
+    def calculate_correlations(self):
+        for first, second in combinations(self.tickers, 2):
+            first_list = []
+            second_list = []
+            for day_prices in self.prices.values():
+                if first in day_prices.keys() and second in day_prices.keys():
+                    first_list.append(float(day_prices[first]))
+                    second_list.append(float(day_prices[second]))
+            self.correlations.setdefault(first, {})
+            self.correlations.setdefault(second, {})
+            corr = pearsonr(first_list, second_list)[0]
+            self.correlations[first][second] = corr
+            self.correlations[second][first] = corr
 
 
 class DataError(Exception):
