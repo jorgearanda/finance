@@ -173,9 +173,12 @@ class Portfolio():
         first_day['volatility'] = None
         first_day['10kEquivalent'] = Decimal(10000)
         first_day['lastPeakTtwr'] = first_day['marketValue']
-        first_day['currentDrawdown'] = Decimal(0)
         first_day['lastPeak10kEquivalent'] = Decimal(10000)
+        first_day['currentDrawdown'] = Decimal(0)
         first_day['currentDrawdownStart'] = self.date_created
+        first_day['greatestDrawdown'] = Decimal(0)
+        first_day['greatestDrawdownStart'] = self.date_created
+        first_day['greatestDrawdownEnd'] = self.date_created
 
         returns_lists = {}
         for day, data in [x for x in self.performance.items()][1:]:
@@ -225,6 +228,7 @@ class Portfolio():
                 data['lastPeakTtwr'] = data['ttwr']
                 data['lastPeak10kEquivalent'] = data['10kEquivalent']
                 data['currentDrawdownStart'] = day
+                data['currentDrawdownEnd'] = day
                 data['currentDrawdown'] = Decimal(0)
             else:
                 data['lastPeakTtwr'] = prev['lastPeakTtwr']
@@ -232,6 +236,19 @@ class Portfolio():
                 data['currentDrawdownStart'] = prev['currentDrawdownStart']
                 data['currentDrawdown'] = min((data['10kEquivalent'] - data['lastPeak10kEquivalent']) /
                                               data['lastPeak10kEquivalent'], prev['currentDrawdown'])
+                if data['currentDrawdown'] <= prev['currentDrawdown']:
+                    data['currentDrawdownEnd'] = day
+                else:
+                    data['currentDrawdownEnd'] = prev['currentDrawdownEnd']
+
+            if data['currentDrawdown'] < prev['greatestDrawdown']:
+                data['greatestDrawdown'] = data['currentDrawdown']
+                data['greatestDrawdownStart'] = data['currentDrawdownStart']
+                data['greatestDrawdownEnd'] = data['currentDrawdownEnd']
+            else:
+                data['greatestDrawdown'] = prev['greatestDrawdown']
+                data['greatestDrawdownStart'] = prev['greatestDrawdownStart']
+                data['greatestDrawdownEnd'] = prev['greatestDrawdownEnd']
 
             # One more pass for percentages
             for ticker, ticker_data in data['assets'].items():
