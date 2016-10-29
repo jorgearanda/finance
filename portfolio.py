@@ -171,6 +171,11 @@ class Portfolio():
         first_day['profitOrLoss'] = Decimal(0)
         first_day['ttwr'] = Decimal(0)
         first_day['volatility'] = None
+        first_day['10kEquivalent'] = Decimal(10000)
+        first_day['lastPeakTtwr'] = first_day['marketValue']
+        first_day['currentDrawdown'] = Decimal(0)
+        first_day['lastPeak10kEquivalent'] = Decimal(10000)
+        first_day['currentDrawdownStart'] = self.date_created
 
         returns_lists = {}
         for day, data in [x for x in self.performance.items()][1:]:
@@ -209,11 +214,24 @@ class Portfolio():
             data['dayReturns'] = data['dayProfitOrLoss'] / prev['marketValue']
             data['profitOrLoss'] = data['marketValue'] - data['totalDeposits']
             data['ttwr'] = (prev['ttwr'] + 1) * (data['dayReturns'] + 1) - 1
+            data['10kEquivalent'] = prev['10kEquivalent'] * (1 + data['dayReturns'])
 
             if data['open']:
                 returns_lists.setdefault('all', []).append(data['dayReturns'])
             data['volatility'] = statistics.pstdev(returns_lists['all'])
             data['percentCash'] = data['cash'] / data['marketValue']
+
+            if data['10kEquivalent'] > prev['lastPeak10kEquivalent']:
+                data['lastPeakTtwr'] = data['ttwr']
+                data['lastPeak10kEquivalent'] = data['10kEquivalent']
+                data['currentDrawdownStart'] = day
+                data['currentDrawdown'] = Decimal(0)
+            else:
+                data['lastPeakTtwr'] = prev['lastPeakTtwr']
+                data['lastPeak10kEquivalent'] = prev['lastPeak10kEquivalent']
+                data['currentDrawdownStart'] = prev['currentDrawdownStart']
+                data['currentDrawdown'] = min((data['10kEquivalent'] - data['lastPeak10kEquivalent']) /
+                                              data['lastPeak10kEquivalent'], prev['currentDrawdown'])
 
             # One more pass for percentages
             for ticker, ticker_data in data['assets'].items():
