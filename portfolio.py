@@ -145,10 +145,10 @@ class Portfolio():
                     'positionCost': 0,
                     'averagePrice': 0
                 })
-                data['assets'][ticker]['units'] += buy_data['units']
-                data['assets'][ticker]['positionCost'] += buy_data['positionCost']
-                data['assets'][ticker]['averagePrice'] = \
-                    data['assets'][ticker]['positionCost'] / data['assets'][ticker]['units']
+                ticker_data = data['assets'][ticker]
+                ticker_data['units'] += buy_data['units']
+                ticker_data['positionCost'] += buy_data['positionCost']
+                ticker_data['averagePrice'] = ticker_data['positionCost'] / ticker_data['units']
 
             # TODO: Include sales
 
@@ -172,7 +172,7 @@ class Portfolio():
         first_day['ttwr'] = Decimal(0)
         first_day['volatility'] = None
         first_day['10kEquivalent'] = Decimal(10000)
-        first_day['lastPeakTtwr'] = first_day['marketValue']
+        first_day['lastPeakTtwr'] = Decimal(0)
         first_day['lastPeak10kEquivalent'] = Decimal(10000)
         first_day['currentDrawdown'] = Decimal(0)
         first_day['currentDrawdownStart'] = self.date_created
@@ -188,17 +188,56 @@ class Portfolio():
             data['cash'] = data['totalDeposits'] + data['totalDividends']
 
             for ticker, ticker_data in data['assets'].items():
+                prev_ticker_data = prev['assets'].get(ticker, {})
                 data['cash'] -= ticker_data['positionCost']
                 data['marketValue'] += ticker_data['marketValue']
                 ticker_data['profitOrLoss'] = ticker_data['marketValue'] - ticker_data['positionCost']
                 ticker_data['dayProfitOrLoss'] = \
-                    ticker_data['profitOrLoss'] - prev['assets'].get(ticker, {}).get('profitOrLoss', 0)
+                    ticker_data['profitOrLoss'] - prev_ticker_data.get('profitOrLoss', 0)
                 if prev['assets'].get(ticker) is None:
                     ticker_data['dayReturns'] = None
+                    ticker_data['ttwr'] = Decimal(0)
+                    ticker_data['10kEquivalent'] = Decimal(10000)
+                    ticker_data['lastPeakTtwr'] = ticker_data['ttwr']
+                    ticker_data['lastPeak10kEquivalent'] = Decimal(10000)
+                    ticker_data['currentDrawdown'] = Decimal(0)
+                    ticker_data['currentDrawdownStart'] = day
+                    ticker_data['greatestDrawdown'] = Decimal(0)
+                    ticker_data['greatestDrawdownStart'] = day
+                    ticker_data['greatestDrawdownEnd'] = day
                 else:
                     ticker_data['dayReturns'] = \
                         (ticker_data['currentPrice'] - prev['assets'][ticker]['currentPrice']) / \
                         prev['assets'][ticker]['currentPrice']
+                    ticker_data['ttwr'] = (prev_ticker_data['ttwr'] + 1) * (ticker_data['dayReturns'] + 1) - 1
+                    ticker_data['10kEquivalent'] = prev_ticker_data['10kEquivalent'] * (1 + ticker_data['dayReturns'])
+
+                    if ticker_data['10kEquivalent'] > prev_ticker_data['lastPeak10kEquivalent']:
+                        ticker_data['lastPeakTtwr'] = ticker_data['ttwr']
+                        ticker_data['lastPeak10kEquivalent'] = ticker_data['10kEquivalent']
+                        ticker_data['currentDrawdownStart'] = day
+                        ticker_data['currentDrawdownEnd'] = day
+                        ticker_data['currentDrawdown'] = Decimal(0)
+                    else:
+                        ticker_data['lastPeakTtwr'] = prev_ticker_data['lastPeakTtwr']
+                        ticker_data['lastPeak10kEquivalent'] = prev_ticker_data['lastPeak10kEquivalent']
+                        ticker_data['currentDrawdownStart'] = prev_ticker_data['currentDrawdownStart']
+                        ticker_data['currentDrawdown'] = min((ticker_data['10kEquivalent'] - ticker_data['lastPeak10kEquivalent']) /
+                                                             ticker_data['lastPeak10kEquivalent'], prev_ticker_data['currentDrawdown'])
+                        if ticker_data['currentDrawdown'] <= prev_ticker_data['currentDrawdown']:
+                            ticker_data['currentDrawdownEnd'] = day
+                        else:
+                            ticker_data['currentDrawdownEnd'] = prev_ticker_data['currentDrawdownEnd']
+
+                    if ticker_data['currentDrawdown'] < prev_ticker_data['greatestDrawdown']:
+                        ticker_data['greatestDrawdown'] = ticker_data['currentDrawdown']
+                        ticker_data['greatestDrawdownStart'] = ticker_data['currentDrawdownStart']
+                        ticker_data['greatestDrawdownEnd'] = ticker_data['currentDrawdownEnd']
+                    else:
+                        ticker_data['greatestDrawdown'] = prev_ticker_data['greatestDrawdown']
+                        ticker_data['greatestDrawdownStart'] = prev_ticker_data['greatestDrawdownStart']
+                        ticker_data['greatestDrawdownEnd'] = prev_ticker_data['greatestDrawdownEnd']
+
                     returns_lists.setdefault(ticker, [])
                     if data['open']:
                         returns_lists[ticker].append(ticker_data['dayReturns'])
@@ -206,7 +245,7 @@ class Portfolio():
                         ticker_data['volatility'] = statistics.pstdev(returns_lists[ticker])
                     else:
                         ticker_data['volatility'] = None
-                ticker_data['dividends'] = prev['assets'].get(ticker, {}).get('dividends', 0) + \
+                ticker_data['dividends'] = prev_ticker_data.get('dividends', 0) + \
                     self.dividends.get(day, {}).get(ticker, 0)
                 ticker_data['dividendReturns'] = ticker_data['dividends'] / ticker_data['positionCost']
                 ticker_data['appreciationReturns'] = ticker_data['profitOrLoss'] / ticker_data['positionCost']
