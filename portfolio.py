@@ -182,6 +182,7 @@ class Portfolio():
         first_day['sharpe'] = Decimal(0)
 
         returns_lists = {}
+        first_ticker_days = {}
         for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
             days_from_start = (day - self.date_created).days
@@ -190,7 +191,9 @@ class Portfolio():
             data['cash'] = data['totalDeposits'] + data['totalDividends']
 
             for ticker, ticker_data in data['assets'].items():
+                first_ticker_days.setdefault(ticker, day)
                 prev_ticker_data = prev['assets'].get(ticker, {})
+                ticker_days_from_start = (day - first_ticker_days[ticker]).days
                 data['cash'] -= ticker_data['positionCost']
                 data['marketValue'] += ticker_data['marketValue']
                 ticker_data['profitOrLoss'] = ticker_data['marketValue'] - ticker_data['positionCost']
@@ -199,6 +202,7 @@ class Portfolio():
                 if prev['assets'].get(ticker) is None:
                     ticker_data['dayReturns'] = None
                     ticker_data['ttwr'] = Decimal(0)
+                    ticker_data['volatility'] = Decimal(0)
                     ticker_data['10kEquivalent'] = Decimal(10000)
                     ticker_data['lastPeakTtwr'] = ticker_data['ttwr']
                     ticker_data['lastPeak10kEquivalent'] = Decimal(10000)
@@ -252,6 +256,11 @@ class Portfolio():
                 ticker_data['dividendReturns'] = ticker_data['dividends'] / ticker_data['positionCost']
                 ticker_data['appreciationReturns'] = ticker_data['profitOrLoss'] / ticker_data['positionCost']
                 ticker_data['totalReturns'] = ticker_data['dividendReturns'] + ticker_data['appreciationReturns']
+
+                if ticker_data['volatility'] is not None and ticker_data['volatility'] > 0:
+                    ticker_data['sharpe'] = (ticker_data['ttwr'] - Decimal(ticker_days_from_start / 365) * config.sharpe) / ticker_data['volatility']
+                else:
+                    ticker_data['sharpe'] = Decimal(0)
 
             data['marketValue'] += data['cash']
             data['dayProfitOrLoss'] = data['marketValue'] - data['dayDeposits'] - prev['marketValue']
