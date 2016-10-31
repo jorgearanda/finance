@@ -179,10 +179,12 @@ class Portfolio():
         first_day['greatestDrawdown'] = Decimal(0)
         first_day['greatestDrawdownStart'] = self.date_created
         first_day['greatestDrawdownEnd'] = self.date_created
+        first_day['sharpe'] = Decimal(0)
 
         returns_lists = {}
         for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
+            days_from_start = (day - self.date_created).days
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
             data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
@@ -288,6 +290,11 @@ class Portfolio():
                 data['greatestDrawdown'] = prev['greatestDrawdown']
                 data['greatestDrawdownStart'] = prev['greatestDrawdownStart']
                 data['greatestDrawdownEnd'] = prev['greatestDrawdownEnd']
+
+            if data['volatility'] > 0:
+                data['sharpe'] = (data['ttwr'] - Decimal(days_from_start / 365) * config.sharpe) / data['volatility']
+            else:
+                data['sharpe'] = Decimal(0)
 
             # One more pass for percentages
             for ticker, ticker_data in data['assets'].items():
