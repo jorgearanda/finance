@@ -17,6 +17,7 @@ class Portfolio():
             self.conn = psycopg2.connect(database=config.database[env], cursor_factory=NamedTupleCursor)
         else:
             self.conn = conn
+        self.conn.autocommit = True
         self.account = account
         self.date_created = self.get_date_created()
         self.prices = OrderedDict()
@@ -43,26 +44,25 @@ class Portfolio():
         Create the skeleton of self.performance: an OrderedDict with daily entries
         which will be populated with the performance data for this portfolio
         '''
-        cur = self.conn.cursor()
-        cur.execute('''
-                    SELECT day, open
-                    FROM marketDays
-                    WHERE day >= %(created)s AND day < %(today)s
-                    ORDER BY day;''',
-                    {'created': self.date_created, 'today': date.today()})
+        with self.conn.cursor() as cur:
+            cur.execute('''
+                        SELECT day, open
+                        FROM marketDays
+                        WHERE day >= %(created)s AND day < %(today)s
+                        ORDER BY day;''',
+                        {'created': self.date_created, 'today': date.today()})
 
-        for row in cur.fetchall():
-            self.performance[row.day] = {
-                'open': row.open,
-                'assets': {},
-                'cash': Decimal(0.0),
-                'dayDeposits': Decimal(0.0),
-                'totalDeposits': Decimal(0.0),
-                'dayDividends': Decimal(0.0),
-                'totalDividends': Decimal(0.0),
-                'marketValue': Decimal(0.0)
-            }
-        cur.close()
+            for row in cur.fetchall():
+                self.performance[row.day] = {
+                    'open': row.open,
+                    'assets': {},
+                    'cash': Decimal(0.0),
+                    'dayDeposits': Decimal(0.0),
+                    'totalDeposits': Decimal(0.0),
+                    'dayDividends': Decimal(0.0),
+                    'totalDividends': Decimal(0.0),
+                    'marketValue': Decimal(0.0)
+                }
 
         dates = list(self.performance.items())
         if dates[0][0] > self.date_created:
@@ -71,41 +71,37 @@ class Portfolio():
             raise DataError('marketDays table ends before yesterday')
 
     def load_daily_prices(self):
-        cur = self.conn.cursor()
-        cur.execute('''
-                    SELECT ticker, day, ask
-                    FROM assetPrices
-                    ORDER BY day;''')
+        with self.conn.cursor() as cur:
+            cur.execute('''
+                        SELECT ticker, day, ask
+                        FROM assetPrices
+                        ORDER BY day;''')
 
-        for asset_price in cur.fetchall():
-            self.prices.setdefault(asset_price.day, {})
-            self.prices[asset_price.day][asset_price.ticker] = asset_price.ask
-            self.tickers.add(asset_price.ticker)
-
-        cur.close()
+            for asset_price in cur.fetchall():
+                self.prices.setdefault(asset_price.day, {})
+                self.prices[asset_price.day][asset_price.ticker] = asset_price.ask
+                self.tickers.add(asset_price.ticker)
 
     def load_transactions(self):
         '''
         Get all transactions for the account(s) in question, and populate the relevant
         data structures with their details.
         '''
-        cur = self.conn.cursor()
-        cur.execute('''
-                    SELECT day, txtype, account, source, target, units, unitprice, commission, total
-                    FROM transactions
-                    WHERE %(account)s is null OR account = %(account)s
-                    ORDER BY day;''',
-                    {'account': self.account})
+        with self.conn.cursor() as cur:
+            cur.execute('''
+                SELECT day, txtype, account, source, target, units, unitprice, commission, total
+                FROM transactions
+                WHERE %(account)s is null OR account = %(account)s
+                ORDER BY day;''',
+                {'account': self.account})
 
-        for tx in cur.fetchall():
-            if tx.txtype == 'deposit':
-                self.add_deposit(tx)
-            elif tx.txtype == 'buy':
-                self.add_buy(tx)
-            elif tx.txtype == 'dividend':
-                self.add_dividend(tx)
-
-        cur.close()
+            for tx in cur.fetchall():
+                if tx.txtype == 'deposit':
+                    self.add_deposit(tx)
+                elif tx.txtype == 'buy':
+                    self.add_buy(tx)
+                elif tx.txtype == 'dividend':
+                    self.add_dividend(tx)
 
     def add_deposit(self, tx):
         self.deposits.setdefault(tx.day, {}).setdefault('amount', Decimal(0))
@@ -318,15 +314,14 @@ class Portfolio():
             deposit['cagr'] = (1 + deposit['returns']) ** Decimal(1 / (((yesterday - day).days + 1) / 365)) - 1
 
     def get_date_created(self):
-        cur = self.conn.cursor()
-        cur.execute('''
-                    SELECT MIN(dateCreated)
-                    FROM accounts
-                    WHERE %(name)s is null OR name = %(name)s;''',
-                    {'name': self.account})
+        with self.conn.cursor() as cur:
+            cur.execute('''
+                        SELECT MIN(dateCreated)
+                        FROM accounts
+                        WHERE %(name)s is null OR name = %(name)s;''',
+                        {'name': self.account})
 
-        start = cur.fetchone()[0]
-        cur.close()
+            start = cur.fetchone()[0]
 
         if start is None:
             raise DataError('No account records found')
