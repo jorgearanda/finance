@@ -1,13 +1,13 @@
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from copy import deepcopy
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from itertools import combinations
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
-from scipy.stats import pearsonr
 import statistics
 
+from assets import Assets
 import config
 
 
@@ -20,24 +20,20 @@ class Portfolio():
         self.conn.autocommit = True
         self.account = account
         self.date_created = self.get_date_created()
-        self.prices = OrderedDict()
+        self.assets = Assets(self.conn)
         self.performance = OrderedDict()
         self.deposits = OrderedDict()
         self.buys = OrderedDict()
         self.sales = OrderedDict()
         self.dividends = OrderedDict()
-        self.tickers = set()
-        self.correlations = OrderedDict()
         self.load()
 
     def load(self):
         self.load_market_days()
-        self.load_daily_prices()
         self.load_transactions()
         self.load_assets_in_performance()
         self.calculate_dailies()
         self.calculate_deposit_performance()
-        self.calculate_correlations()
 
     def load_market_days(self):
         '''
@@ -69,18 +65,6 @@ class Portfolio():
             raise DataError('marketDays table starts after this account was opened')
         if dates[-1][0] < date.today() - timedelta(days=1):
             raise DataError('marketDays table ends before yesterday')
-
-    def load_daily_prices(self):
-        with self.conn.cursor() as cur:
-            cur.execute('''
-                        SELECT ticker, day, ask
-                        FROM assetPrices
-                        ORDER BY day;''')
-
-            for asset_price in cur.fetchall():
-                self.prices.setdefault(asset_price.day, {})
-                self.prices[asset_price.day][asset_price.ticker] = asset_price.ask
-                self.tickers.add(asset_price.ticker)
 
     def load_transactions(self):
         '''
@@ -149,7 +133,7 @@ class Portfolio():
             # TODO: Include sales
 
             for ticker, ticker_data in data['assets'].items():
-                ticker_data['currentPrice'] = self.prices.get(day, {}).get(ticker)
+                ticker_data['currentPrice'] = self.assets.prices.get(day, {}).get(ticker)  # TODO: better way to access
                 if ticker_data['currentPrice'] is None:
                     ticker_data['currentPrice'] = prev_data['assets'][ticker]['currentPrice']
                 ticker_data['marketValue'] = ticker_data['units'] * ticker_data['currentPrice']
@@ -327,20 +311,6 @@ class Portfolio():
             raise DataError('No account records found')
 
         return start
-
-    def calculate_correlations(self):
-        for first, second in combinations(self.tickers, 2):
-            first_list = []
-            second_list = []
-            for day_prices in self.prices.values():
-                if first in day_prices.keys() and second in day_prices.keys():
-                    first_list.append(float(day_prices[first]))
-                    second_list.append(float(day_prices[second]))
-            self.correlations.setdefault(first, {})
-            self.correlations.setdefault(second, {})
-            corr = pearsonr(first_list, second_list)[0]
-            self.correlations[first][second] = corr
-            self.correlations[second][first] = corr
 
 
 class DataError(Exception):
