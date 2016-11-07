@@ -42,11 +42,11 @@ class Portfolio():
         '''
         with self.conn.cursor() as cur:
             cur.execute('''
-                        SELECT day, open
-                        FROM marketDays
-                        WHERE day >= %(created)s AND day < %(today)s
-                        ORDER BY day;''',
-                        {'created': self.date_created, 'today': date.today()})
+                SELECT day, open
+                FROM marketDays
+                WHERE day >= %(created)s AND day < %(today)s
+                ORDER BY day;''',
+                {'created': self.date_created, 'today': date.today()})
 
             for row in cur.fetchall():
                 self.performance[row.day] = {
@@ -130,10 +130,8 @@ class Portfolio():
                 ticker_data['positionCost'] += buy_data['positionCost']
                 ticker_data['averagePrice'] = ticker_data['positionCost'] / ticker_data['units']
 
-            # TODO: Include sales
-
             for ticker, ticker_data in data['assets'].items():
-                ticker_data['currentPrice'] = self.assets.prices.get(day, {}).get(ticker)  # TODO: better way to access
+                ticker_data['currentPrice'] = self.assets.price(day, ticker)
                 if ticker_data['currentPrice'] is None:
                     ticker_data['currentPrice'] = prev_data['assets'][ticker]['currentPrice']
                 ticker_data['marketValue'] = ticker_data['units'] * ticker_data['currentPrice']
@@ -300,10 +298,10 @@ class Portfolio():
     def get_date_created(self):
         with self.conn.cursor() as cur:
             cur.execute('''
-                        SELECT MIN(dateCreated)
-                        FROM accounts
-                        WHERE %(name)s is null OR name = %(name)s;''',
-                        {'name': self.account})
+                SELECT MIN(dateCreated)
+                FROM accounts
+                WHERE %(name)s is null OR name = %(name)s;''',
+                {'name': self.account})
 
             start = cur.fetchone()[0]
 

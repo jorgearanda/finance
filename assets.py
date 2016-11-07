@@ -15,6 +15,15 @@ class Assets():
         self.load_prices()
         self.calculate_correlations()
 
+    def price(self, day, ticker):
+        return self.prices.get(day, {}).get(ticker)
+
+    def corr(self, ticker1, ticker2=None):
+        if ticker2 is None:
+            return self.correlations[ticker1]
+        else:
+            return self.correlations[ticker1][ticker2]
+
     def load_prices(self):
         with self.conn.cursor() as cur:
             cur.execute('''
