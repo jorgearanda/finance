@@ -1,7 +1,6 @@
 from collections import OrderedDict
-from decimal import Decimal
 from itertools import combinations
-from math import sqrt
+from scipy.stats import pearsonr
 
 
 class Assets():
@@ -39,24 +38,14 @@ class Assets():
 
     def calculate_correlations(self):
         for ticker1, ticker2 in combinations(self.tickers, 2):
-            pairs = 0
-            ticker1_sum = Decimal(0)
-            ticker1_squared = Decimal(0)
-            ticker2_sum = Decimal(0)
-            ticker2_squared = Decimal(0)
-            ticker_product_sum = Decimal(0)
+            ticker1_list = []
+            ticker2_list = []
             for day_prices in self.prices.values():
                 if ticker1 in day_prices.keys() and ticker2 in day_prices.keys():
-                    pairs += 1
-                    ticker1_sum += day_prices[ticker1]
-                    ticker1_squared += day_prices[ticker1] ** 2
-                    ticker2_sum += day_prices[ticker2]
-                    ticker2_squared += day_prices[ticker2] ** 2
-                    ticker_product_sum += day_prices[ticker1] * day_prices[ticker2]
-
+                    ticker1_list.append(float(day_prices[ticker1]))
+                    ticker2_list.append(float(day_prices[ticker2]))
             self.correlations.setdefault(ticker1, {})
             self.correlations.setdefault(ticker2, {})
-            corr = (pairs * ticker_product_sum - (ticker1_sum * ticker2_sum)) / \
-                Decimal(sqrt((pairs * ticker1_squared - ticker1_sum ** 2) * (pairs * ticker2_squared - ticker2_sum ** 2)))
+            corr = pearsonr(ticker1_list, ticker2_list)[0]
             self.correlations[ticker1][ticker2] = corr
             self.correlations[ticker2][ticker1] = corr
