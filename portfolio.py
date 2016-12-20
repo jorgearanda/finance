@@ -9,6 +9,7 @@ import statistics
 
 from assets import Assets
 import config
+from util.cagr import cagr
 
 
 class Portfolio():
@@ -293,7 +294,7 @@ class Portfolio():
         for day, deposit in self.deposits.items():
             deposit['returns'] = (1 + yesterday_perf['ttwr']) / (1 + self.performance[day]['ttwr']) - 1
             deposit['currentValue'] = deposit['amount'] * (1 + deposit['returns'])
-            deposit['cagr'] = (1 + deposit['returns']) ** Decimal(1 / (((yesterday - day).days + 1) / 365)) - 1
+            deposit['cagr'] = cagr(deposit['amount'], deposit['currentValue'], days=(yesterday - day).days + 1)
 
     def get_date_created(self):
         with self.conn.cursor() as cur:
