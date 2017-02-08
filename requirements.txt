@@ -1,5 +1,6 @@
 coverage
 freezegun
 nose
+pandas
 psycopg2
 scipy
