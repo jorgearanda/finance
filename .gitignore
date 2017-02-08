@@ -2,3 +2,4 @@
 .coverage
 cover/
 populate/
+*.ipynb_checkpoints
