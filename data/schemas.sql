@@ -52,6 +52,11 @@ CREATE TABLE IF NOT EXISTS assetPrices (
     bid numeric(9, 2)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS ticker_day ON assetPrices (
+    ticker ASC,
+    day ASC
+);
+
 CREATE TABLE IF NOT EXISTS inflationRates (
     month date not null primary key,
     rate numeric(9, 2)
