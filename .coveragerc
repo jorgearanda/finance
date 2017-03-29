@@ -1,5 +1,5 @@
 [run]
-include = assets.py, portfolio.py
+include = assets.py, portfolio.py, util/*.py
 
 [report]
 exclude_lines =

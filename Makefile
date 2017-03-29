@@ -8,7 +8,7 @@ freshtest: clean recreatedb test
 test:
 	rm -rf cover
 	rm -f .coverage
-	nosetests --with-coverage --cover-html
+	pytest --cov-report term-missing --cov
 
 recreatedb:
 	psql -h localhost finance -c "drop database financetest;"
