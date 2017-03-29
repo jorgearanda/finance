@@ -32,4 +32,4 @@ def setup():
 
 
 def teardown():
-    pass
+    clean_postgres()
