@@ -18,13 +18,13 @@ def cagr(initial, final, years=None, months=None, days=None):
     if years is not None:
         years = Decimal(years)
     elif months is not None:
-        years = Decimal(months) / Decimal(12.0)
+        years = Decimal(months) / 12
     elif days is not None:
-        years = Decimal(days) / Decimal(365.0)
+        years = Decimal(days) / 365
     else:
         raise Exception('Missing years, months, or days value')
 
     if years == Decimal(0):
         return None
 
-    return (final / initial) ** (Decimal(1) / years) - Decimal(1)
+    return (final / initial) ** (1 / years) - 1
