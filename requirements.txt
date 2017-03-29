@@ -2,6 +2,7 @@ coverage
 docopt
 freezegun
 nose
+numpy
 pandas
 psycopg2
 pytest-cov

@@ -3,3 +3,4 @@
 cover/
 populate/
 *.ipynb_checkpoints
+.cache/
