@@ -40,8 +40,8 @@ def main(args):
         for row in table.iterrows():
             if row[1]['Date'] >= '2016-09-08':  # TODO: so hacky; fix
                 cur.execute('''
-                    INSERT INTO assetprices (ticker, day, ask, bid)
-                    VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s) ON CONFLICT DO NOTHING;''',
+                    INSERT INTO assetprices (ticker, day, ask, bid, close)
+                    VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s) ON CONFLICT DO NOTHING;''',
                     {
                         'ticker': ticker,
                         'day': row[1]['Date'],
