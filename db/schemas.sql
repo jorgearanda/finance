@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS assetPrices (
     ticker text not null references assets(ticker),
     day date not null default current_date references marketDays(day),
+    close numeric(9, 2),
     ask numeric(9, 2),
     bid numeric(9, 2)
 );
