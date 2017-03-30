@@ -1,6 +1,5 @@
 from datetime import datetime as dt, date
 from freezegun import freeze_time
-import pytest
 
 from components.days import Days
 from db import db

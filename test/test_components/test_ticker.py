@@ -1,7 +1,6 @@
 from datetime import datetime as dt, date
 from decimal import Decimal
 from freezegun import freeze_time
-import pytest
 
 from components.ticker import Ticker
 from db import db
