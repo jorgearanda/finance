@@ -9,10 +9,13 @@ class Ticker():
 
     Public methods:
     price(date) -- Return the closing price of the ticker on this date
+    change(date) -- Return the percentage price change from the date before
 
     Instance variables:
     ticker -- Name of the ticker
-    prices -- DataFrame indexed by day, with a `price` Decimal column with the ticker's closing price
+    prices -- DataFrame indexed by day, with:
+        - a `price` Decimal column with the ticker's closing price
+        - a `change` Decimal column with the percentage price change from the day before
     """
 
     def price(self, day):
@@ -26,6 +29,20 @@ class Ticker():
         """
         try:
             return self.prices.loc[day]['price']
+        except KeyError:
+            return None
+
+    def change(self, day):
+        """Report the percentage price change from the date before.
+
+        Keyword arguments:
+        day -- the requested day, in datetime.date format
+
+        Returns:
+        Decimal -- the percentage price change, or None if one could not be calculated
+        """
+        try:
+            return self.prices.loc[day]['change']
         except KeyError:
             return None
 
@@ -57,7 +74,7 @@ class Ticker():
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute('''
-                SELECT m.day, p.close as price
+                SELECT m.day, p.close AS price, NULL AS change
                 FROM marketdays m LEFT JOIN assetprices p USING (day)
                 WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
                 AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
@@ -79,5 +96,18 @@ class Ticker():
                 last_price = row['price']
             else:
                 row['price'] = last_price
+
+        _prices = self._calc_changes(_prices)
+
+        return _prices
+
+    def _calc_changes(self, _prices):
+        """Calculate the price changes from the date before."""
+        prev_price = None
+        for _, row in _prices.iterrows():
+            if row['price'] is not None:
+                if prev_price is not None:
+                    row['change'] = (row['price'] / prev_price) - 1
+                prev_price = row['price']
 
         return _prices
