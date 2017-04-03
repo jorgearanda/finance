@@ -39,7 +39,7 @@ class Ticker():
         day -- the requested day, in datetime.date format
 
         Returns:
-        Decimal -- the percentage price change, or None if one could not be calculated
+        Float -- the percentage price change, or NaN if one could not be calculated
         """
         try:
             return self.prices.loc[day]['change']
@@ -61,7 +61,9 @@ class Ticker():
         from_day -- the first day in the sequence, in datetime.date format (default None)
         """
         self.ticker_name = ticker_name
-        self.prices = self._get_prices(ticker_name, from_day)
+        _prices = self._get_prices(ticker_name, from_day)
+        _changes = self._calc_changes(_prices)
+        self.prices = pd.concat([_prices, _changes], axis=1)
 
     def __repr__(self):
         return str(self.prices.head())
@@ -74,7 +76,7 @@ class Ticker():
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute('''
-                SELECT m.day, p.close AS price, NULL AS change
+                SELECT m.day, p.close AS price
                 FROM marketdays m LEFT JOIN assetprices p USING (day)
                 WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
                 AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
@@ -97,17 +99,17 @@ class Ticker():
             else:
                 row['price'] = last_price
 
-        _prices = self._calc_changes(_prices)
-
         return _prices
 
     def _calc_changes(self, _prices):
         """Calculate the price changes from the date before."""
+        _changes = pd.DataFrame(_prices, columns=['change'])
+
         prev_price = None
-        for _, row in _prices.iterrows():
+        for day, row in _prices.iterrows():
             if row['price'] is not None:
                 if prev_price is not None:
-                    row['change'] = (row['price'] / prev_price) - 1
+                    _changes.loc[day]['change'] = (row['price'] / prev_price) - 1
                 prev_price = row['price']
 
-        return _prices
+        return _changes

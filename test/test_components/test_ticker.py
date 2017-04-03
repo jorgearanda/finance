@@ -1,6 +1,7 @@
 from datetime import datetime as dt, date
 from decimal import Decimal
 from freezegun import freeze_time
+import pandas as pd
 from pytest import approx
 
 from components.ticker import Ticker
@@ -38,7 +39,7 @@ def test_price(simple):
     assert vcn.price(date(2017, 3, 7)) is None
 
     assert vcn.change(date(2017, 3, 1)) is None
-    assert vcn.change(date(2017, 3, 2)) is None  # Because the previous price is None
+    assert pd.isnull(vcn.change(date(2017, 3, 2)))  # Because the previous price is None
     assert float(vcn.change(date(2017, 3, 3))) == approx(30.10 / 30.00 - 1)
     assert vcn.change(date(2017, 3, 4)) == 0
     assert vcn.change(date(2017, 3, 5)) == 0
