@@ -51,3 +51,5 @@ def test_price(simple):
     assert vcn.change_from_start(date(2017, 3, 4)) == approx(30.10 / 30.00 - 1)
     assert vcn.change_from_start(date(2017, 3, 5)) == approx(30.10 / 30.00 - 1)
     assert vcn.change_from_start(date(2017, 3, 6)) == approx(29.85 / 30.00 - 1)
+
+    assert vcn.volatility() == approx(vcn.prices[(vcn.prices.open)]['change'].std(axis=0))

@@ -1,6 +1,7 @@
 from datetime import date
 import pandas as pd
 
+from components.days import Days
 from db import db
 
 
@@ -11,6 +12,7 @@ class Ticker():
     price(date) -- Return the closing price of the ticker on this date
     change(date) -- Return the percentage price change from the date before
     change_from_start(date) -- Return the percentage price change from the initial value
+    volatility() -- Return the percentage change volatility of all prices in the object
 
     Instance variables:
     ticker -- Name of the ticker
@@ -62,6 +64,9 @@ class Ticker():
         except KeyError:
             return None
 
+    def volatility(self):
+        return self.prices[(self.prices.open)]['change'].std(axis=0)
+
     def __init__(self, ticker_name, from_day=None):
         """Instantiate a Ticker object.
 
@@ -78,9 +83,10 @@ class Ticker():
         """
         self.ticker_name = ticker_name
         _prices = self._get_prices(ticker_name, from_day)
+        _days = Days(from_day).days
         _changes = self._calc_changes(_prices)
         _changes_from_start = self._calc_changes_from_start(_prices)
-        self.prices = pd.concat([_prices, _changes, _changes_from_start], axis=1)
+        self.prices = pd.concat([_prices, _days, _changes, _changes_from_start], axis=1)
 
     def __repr__(self):
         return str(self.prices.head())
@@ -111,7 +117,7 @@ class Ticker():
         """Use the last available price on days where we do not have a closing price."""
         last_price = None
         for _, row in _prices.iterrows():
-            if row['price'] is not None:
+            if not pd.isnull(row['price']):
                 last_price = row['price']
             else:
                 row['price'] = last_price
@@ -124,7 +130,7 @@ class Ticker():
 
         prev_price = None
         for day, row in _prices.iterrows():
-            if row['price'] is not None:
+            if not pd.isnull(row['price']):
                 if prev_price is not None:
                     _changes.loc[day]['change'] = (row['price'] / prev_price) - 1
                 prev_price = row['price']
@@ -137,7 +143,7 @@ class Ticker():
 
         start_price = None
         for day, row in _prices.iterrows():
-            if row['price'] is not None:
+            if not pd.isnull(row['price']):
                 if start_price is None:
                     start_price = row['price']
                 _changes_from_start.loc[day]['change_from_start'] = (row['price'] / start_price) - 1
