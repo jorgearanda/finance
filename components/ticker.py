@@ -15,7 +15,7 @@ class Ticker():
     ticker -- Name of the ticker
     prices -- DataFrame indexed by day, with:
         - a `price` Decimal column with the ticker's closing price
-        - a `change` Decimal column with the percentage price change from the day before
+        - a `change` float column with the percentage price change from the day before
     """
 
     def price(self, day):
