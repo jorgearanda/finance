@@ -44,3 +44,10 @@ def test_price(simple):
     assert vcn.change(date(2017, 3, 4)) == 0
     assert vcn.change(date(2017, 3, 5)) == 0
     assert float(vcn.change(date(2017, 3, 6))) == approx(29.85 / 30.10 - 1)
+
+    assert vcn.change_from_start(date(2017, 3, 1)) is None
+    assert vcn.change_from_start(date(2017, 3, 2)) == approx(0)
+    assert vcn.change_from_start(date(2017, 3, 3)) == approx(30.10 / 30.00 - 1)
+    assert vcn.change_from_start(date(2017, 3, 4)) == approx(30.10 / 30.00 - 1)
+    assert vcn.change_from_start(date(2017, 3, 5)) == approx(30.10 / 30.00 - 1)
+    assert vcn.change_from_start(date(2017, 3, 6)) == approx(29.85 / 30.00 - 1)

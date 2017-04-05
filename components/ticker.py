@@ -10,12 +10,14 @@ class Ticker():
     Public methods:
     price(date) -- Return the closing price of the ticker on this date
     change(date) -- Return the percentage price change from the date before
+    change_from_start(date) -- Return the percentage price change from the initial value
 
     Instance variables:
     ticker -- Name of the ticker
     prices -- DataFrame indexed by day, with:
         - a `price` Decimal column with the ticker's closing price
         - a `change` float column with the percentage price change from the day before
+        - a `change_from_start` float column with the percentage price change from the initial value
     """
 
     def price(self, day):
@@ -46,6 +48,20 @@ class Ticker():
         except KeyError:
             return None
 
+    def change_from_start(self, day):
+        """Report the percentage price change from the initial value.
+
+        Keyword arguments:
+        day -- the requested day, in datetime.date format
+
+        Returns:
+        Float -- the percentage price change, or NaN if one could not be calculated
+        """
+        try:
+            return self.prices.loc[day]['change_from_start']
+        except KeyError:
+            return None
+
     def __init__(self, ticker_name, from_day=None):
         """Instantiate a Ticker object.
 
@@ -63,7 +79,8 @@ class Ticker():
         self.ticker_name = ticker_name
         _prices = self._get_prices(ticker_name, from_day)
         _changes = self._calc_changes(_prices)
-        self.prices = pd.concat([_prices, _changes], axis=1)
+        _changes_from_start = self._calc_changes_from_start(_prices)
+        self.prices = pd.concat([_prices, _changes, _changes_from_start], axis=1)
 
     def __repr__(self):
         return str(self.prices.head())
@@ -113,3 +130,16 @@ class Ticker():
                 prev_price = row['price']
 
         return _changes
+
+    def _calc_changes_from_start(self, _prices):
+        """Calculate the price changes from the first available price."""
+        _changes_from_start = pd.DataFrame(_prices, columns=['change_from_start'])
+
+        start_price = None
+        for day, row in _prices.iterrows():
+            if row['price'] is not None:
+                if start_price is None:
+                    start_price = row['price']
+                _changes_from_start.loc[day]['change_from_start'] = (row['price'] / start_price) - 1
+
+        return _changes_from_start
