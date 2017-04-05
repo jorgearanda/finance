@@ -12,7 +12,6 @@ class Ticker():
     price(date) -- Return the closing price of the ticker on this date
     change(date) -- Return the percentage price change from the date before
     change_from_start(date) -- Return the percentage price change from the initial value
-    volatility() -- Return the percentage change volatility of all prices in the object
 
     Instance variables:
     ticker -- Name of the ticker
@@ -20,6 +19,7 @@ class Ticker():
         - a `price` Decimal column with the ticker's closing price
         - a `change` float column with the percentage price change from the day before
         - a `change_from_start` float column with the percentage price change from the initial value
+    volatility -- Standard deviation of the price changes (that is, of the `change` series)
     """
 
     def price(self, day):
@@ -64,9 +64,6 @@ class Ticker():
         except KeyError:
             return None
 
-    def volatility(self):
-        return self.prices[(self.prices.open)]['change'].std(axis=0)
-
     def __init__(self, ticker_name, from_day=None):
         """Instantiate a Ticker object.
 
@@ -87,6 +84,10 @@ class Ticker():
         _changes = self._calc_changes(_prices)
         _changes_from_start = self._calc_changes_from_start(_prices)
         self.prices = pd.concat([_prices, _days, _changes, _changes_from_start], axis=1)
+        if self.prices.empty:
+            self.volatility = None
+        else:
+            self.volatility = self.prices[(self.prices.open)]['change'].std(axis=0)
 
     def __repr__(self):
         return str(self.prices.head())
