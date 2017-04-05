@@ -84,10 +84,7 @@ class Ticker():
         _changes = self._calc_changes(_prices)
         _changes_from_start = self._calc_changes_from_start(_prices)
         self.prices = pd.concat([_prices, _days, _changes, _changes_from_start], axis=1)
-        if self.prices.empty:
-            self.volatility = None
-        else:
-            self.volatility = self.prices[(self.prices.open)]['change'].std(axis=0)
+        self.volatility = self._get_volatility()
 
     def __repr__(self):
         return str(self.prices.head())
@@ -150,3 +147,9 @@ class Ticker():
                 _changes_from_start.loc[day]['change_from_start'] = (row['price'] / start_price) - 1
 
         return _changes_from_start
+
+    def _get_volatility(self):
+        if self.prices.empty:
+            return None
+        else:
+            return self.prices[(self.prices.open)]['change'].std(axis=0)
