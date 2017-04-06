@@ -4,3 +4,5 @@ cover/
 populate/
 *.ipynb_checkpoints
 .cache/
+notebooks/Untitled.ipynb
+notebooks/Sandbox.ipynb
