@@ -64,19 +64,19 @@ class Tickers():
 
     def _collect_prices(self):
         """Extract the prices from the ticker objects and collect them in a single DataFrame."""
-        _prices = pd.concat([self.tickers[name].prices['price'] for name in self.ticker_names], axis=1)
+        _prices = pd.concat([self.tickers[name].values['price'] for name in self.ticker_names], axis=1)
         _prices.columns = self.ticker_names
         return _prices
 
     def _collect_changes(self):
         """Extract the price changes from the ticker objects and collect them in a single DataFrame."""
-        _changes = pd.concat([self.tickers[name].prices['change'] for name in self.ticker_names], axis=1)
+        _changes = pd.concat([self.tickers[name].values['change'] for name in self.ticker_names], axis=1)
         _changes.columns = self.ticker_names
         return _changes
 
     def _collect_changes_from_start(self):
         """Extract the price changes from the start from the ticker objects and collect them in a single DataFrame."""
-        _changes = pd.concat([self.tickers[name].prices['change_from_start'] for name in self.ticker_names], axis=1)
+        _changes = pd.concat([self.tickers[name].values['change_from_start'] for name in self.ticker_names], axis=1)
         _changes.columns = self.ticker_names
         return _changes
 

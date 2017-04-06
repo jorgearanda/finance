@@ -15,7 +15,7 @@ class Ticker():
 
     Instance variables:
     ticker -- Name of the ticker
-    prices -- DataFrame indexed by day, with:
+    values -- DataFrame indexed by day, with:
         - a `price` float column with the ticker's closing price
         - a `change` float column with the percentage price change from the day before
         - a `change_from_start` float column with the percentage price change from the initial value
@@ -32,7 +32,7 @@ class Ticker():
         Float -- the closing price on the requested day, or None if out of scope
         """
         try:
-            return self.prices.loc[day]['price']
+            return self.values.loc[day]['price']
         except KeyError:
             return None
 
@@ -46,7 +46,7 @@ class Ticker():
         Float -- the percentage price change, or NaN if one could not be calculated
         """
         try:
-            return self.prices.loc[day]['change']
+            return self.values.loc[day]['change']
         except KeyError:
             return None
 
@@ -60,7 +60,7 @@ class Ticker():
         Float -- the percentage price change, or NaN if one could not be calculated
         """
         try:
-            return self.prices.loc[day]['change_from_start']
+            return self.values.loc[day]['change_from_start']
         except KeyError:
             return None
 
@@ -83,14 +83,14 @@ class Ticker():
         _days = Days(from_day).days
         _changes = self._calc_changes(_prices)
         _changes_from_start = self._calc_changes_from_start(_prices)
-        self.prices = pd.concat([_prices, _days, _changes, _changes_from_start], axis=1)
+        self.values = pd.concat([_prices, _days, _changes, _changes_from_start], axis=1)
         self.volatility = self._get_volatility()
 
     def __repr__(self):
-        return str(self.prices.head())
+        return str(self.values.head())
 
     def __str__(self):
-        return str(self.prices.head())
+        return str(self.values.head())
 
     def _get_prices(self, ticker_name, from_day):
         """Create a dataframe with the ticker's closing prices."""
@@ -150,7 +150,7 @@ class Ticker():
         return _changes_from_start
 
     def _get_volatility(self):
-        if self.prices.empty:
+        if self.values.empty:
             return None
         else:
-            return self.prices[(self.prices.open)]['change'].std(axis=0)
+            return self.values[(self.values.open)]['change'].std(axis=0)

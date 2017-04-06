@@ -25,7 +25,7 @@ def test_price_does_not_crash_when_empty():
     assert Ticker('VCN.TO').price(date.today()) is None
 
 
-def test_price(simple):
+def test_values(simple):
     with freeze_time(dt(2017, 3, 7)):
         vcn = Ticker('VCN.TO')
 
@@ -51,4 +51,4 @@ def test_price(simple):
     assert vcn.change_from_start(date(2017, 3, 5)) == approx(30.10 / 30.00 - 1)
     assert vcn.change_from_start(date(2017, 3, 6)) == approx(29.85 / 30.00 - 1)
 
-    assert vcn.volatility == approx(vcn.prices[(vcn.prices.open)]['change'].std(axis=0))
+    assert vcn.volatility == approx(vcn.values[(vcn.values.open)]['change'].std(axis=0))
