@@ -1,5 +1,4 @@
 from datetime import datetime as dt, date
-from decimal import Decimal
 from freezegun import freeze_time
 import pandas as pd
 from pytest import approx
