@@ -31,11 +31,11 @@ def test_price(simple):
         vcn = Ticker('VCN.TO')
 
     assert vcn.price(date(2017, 3, 1)) is None
-    assert vcn.price(date(2017, 3, 2)) == Decimal('30.00')
-    assert vcn.price(date(2017, 3, 3)) == Decimal('30.10')
-    assert vcn.price(date(2017, 3, 4)) == Decimal('30.10')
-    assert vcn.price(date(2017, 3, 5)) == Decimal('30.10')
-    assert vcn.price(date(2017, 3, 6)) == Decimal('29.85')
+    assert vcn.price(date(2017, 3, 2)) == approx(30.00)
+    assert vcn.price(date(2017, 3, 3)) == approx(30.10)
+    assert vcn.price(date(2017, 3, 4)) == approx(30.10)
+    assert vcn.price(date(2017, 3, 5)) == approx(30.10)
+    assert vcn.price(date(2017, 3, 6)) == approx(29.85)
     assert vcn.price(date(2017, 3, 7)) is None
 
     assert vcn.change(date(2017, 3, 1)) is None

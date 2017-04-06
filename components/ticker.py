@@ -16,7 +16,7 @@ class Ticker():
     Instance variables:
     ticker -- Name of the ticker
     prices -- DataFrame indexed by day, with:
-        - a `price` Decimal column with the ticker's closing price
+        - a `price` float column with the ticker's closing price
         - a `change` float column with the percentage price change from the day before
         - a `change_from_start` float column with the percentage price change from the initial value
     volatility -- Standard deviation of the price changes (that is, of the `change` series)
@@ -29,7 +29,7 @@ class Ticker():
         day -- the requested day, in datetime.date format
 
         Returns:
-        Decimal -- the closing price on the requested day, or None if out of scope
+        Float -- the closing price on the requested day, or None if out of scope
         """
         try:
             return self.prices.loc[day]['price']
@@ -107,6 +107,7 @@ class Ticker():
             _prices = pd.DataFrame(cur.fetchall())
             if not _prices.empty:
                 _prices = _prices.set_index('day')
+                _prices = _prices.astype('float')
 
         _prices = self._fill_price_gaps(_prices)
         return _prices
