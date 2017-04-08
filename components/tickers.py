@@ -8,6 +8,9 @@ from db import db
 class Tickers():
     """DataFrame-based structure that wraps several Ticker objects
 
+    Public methods:
+    price(date, ticker_name) -- Price at the given date of the given ticker
+
     Instance variables:
     ticker_names -- List with the ticker names contained in the object
     tickers -- Dict with ticker names as keys and Ticker objects as values
@@ -19,6 +22,10 @@ class Tickers():
     correlations -- DataFrame indexed by ticker name with one column per ticker. Values represent the correlation
         between both tickers' prices
     """
+
+    def price(self, day, ticker_name):
+        """Return the price of ticker_name on the given day."""
+        return self.tickers[ticker_name].price(day)
 
     def __init__(self, from_day=None):
         """Instantiate a Tickers object.

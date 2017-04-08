@@ -38,3 +38,5 @@ def test_loads_with_data(simple):
     assert t.volatilities['VEE.TO'] == t.tickers['VEE.TO'].volatility
     assert t.correlations['VCN.TO']['VCN.TO'] == approx(1.00)
     assert t.correlations['VCN.TO']['VEE.TO'] == approx(-0.988212)
+
+    assert t.price(date(2017, 3, 2), 'VCN.TO') == approx(30.00)
