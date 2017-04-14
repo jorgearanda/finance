@@ -14,7 +14,7 @@ class Ticker():
     change_from_start(date) -- Return the percentage price change from the initial value
 
     Instance variables:
-    ticker -- Name of the ticker
+    ticker_name -- Name of the ticker
     values -- DataFrame indexed by day, with:
         - a `price` float column with the ticker's closing price
         - a `change` float column with the percentage price change from the day before
