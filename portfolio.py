@@ -142,6 +142,7 @@ class Portfolio():
     def calculate_dailies(self):
         first_day = self.performance[self.date_created]
         first_day['totalDeposits'] = first_day['dayDeposits']
+        first_day['averageCapital'] = first_day['dayDeposits']
         first_day['totalDividends'] = first_day['dayDividends']
         first_day['cash'] = first_day['totalDeposits'] + first_day['totalDividends']
         first_day['marketValue'] = first_day['cash']
@@ -149,6 +150,7 @@ class Portfolio():
         first_day['dayReturns'] = Decimal(0)
         first_day['profitOrLoss'] = Decimal(0)
         first_day['ttwr'] = Decimal(0)
+        first_day['mwrr'] = Decimal(0)
         first_day['volatility'] = None
         first_day['10kEquivalent'] = Decimal(10000)
         first_day['lastPeakTtwr'] = Decimal(0)
@@ -162,10 +164,13 @@ class Portfolio():
 
         returns_lists = {}
         first_ticker_days = {}
+        capital_sums = first_day['averageCapital']
         for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
             days_from_start = (day - self.date_created).days
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
+            capital_sums += data['totalDeposits']
+            data['averageCapital'] = capital_sums / days_from_start
             data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
 
@@ -246,6 +251,7 @@ class Portfolio():
             data['dayReturns'] = data['dayProfitOrLoss'] / prev['marketValue']
             data['profitOrLoss'] = data['marketValue'] - data['totalDeposits']
             data['ttwr'] = (prev['ttwr'] + 1) * (data['dayReturns'] + 1) - 1
+            data['mwrr'] = data['profitOrLoss'] / data['averageCapital']
             data['10kEquivalent'] = prev['10kEquivalent'] * (1 + data['dayReturns'])
 
             if data['open']:
