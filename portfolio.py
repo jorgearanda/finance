@@ -164,13 +164,13 @@ class Portfolio():
 
         returns_lists = {}
         first_ticker_days = {}
-        capital_sums = first_day['averageCapital']
+        capital_sums = first_day['totalDeposits']
         for day, data in [x for x in self.performance.items()][1:]:
             prev = self.performance[day - timedelta(days=1)]
             days_from_start = (day - self.date_created).days
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
             capital_sums += data['totalDeposits']
-            data['averageCapital'] = capital_sums / days_from_start
+            data['averageCapital'] = capital_sums / (days_from_start + 1)
             data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
 
