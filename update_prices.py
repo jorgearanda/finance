@@ -35,18 +35,17 @@ def main(args):
     connect(env)
     prices = {x.ticker: None for x in get_tickers()}
     cur = conn.cursor()
-    for ticker in prices.keys():
-        table = pd.read_csv('http://ichart.finance.yahoo.com/table.csv?s=' + ticker + '&g=d')
-        for row in table.iterrows():
-            if row[1]['Date'] >= '2016-09-08':  # TODO: so hacky; fix
-                cur.execute('''
-                    INSERT INTO assetprices (ticker, day, ask, bid, close)
-                    VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s) ON CONFLICT DO NOTHING;''',
-                    {
-                        'ticker': ticker,
-                        'day': row[1]['Date'],
-                        'close': row[1]['Close']
-                    })
+    table = pd.read_csv('populate/prices.csv')
+    for row in table.iterrows():
+        if row[1]['Date'] >= '2016-09-08':  # TODO: so hacky; fix
+            cur.execute('''
+                INSERT INTO assetprices (ticker, day, ask, bid, close)
+                VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s) ON CONFLICT DO NOTHING;''',
+                {
+                    'ticker': row[1]['Ticker'],
+                    'day': row[1]['Date'],
+                    'close': row[1]['Close']
+                })
 
     cur.close()
     conn.commit()
