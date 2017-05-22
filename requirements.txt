@@ -1,6 +1,8 @@
+beautifulsoup4
 coverage
 docopt
 freezegun
+html5lib
 nose
 numpy
 pandas
