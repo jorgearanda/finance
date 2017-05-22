@@ -13,7 +13,7 @@ test:
 recreatedb:
 	psql -h localhost finance -c "drop database financetest;"
 	psql -h localhost finance -c "create database financetest;"
-	psql -h localhost financetest < ./data/schemas.sql
+	psql -h localhost financetest < ./db/schemas.sql
 
 clean:
 	rm -rf __pycache__
