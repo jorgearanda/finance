@@ -39,12 +39,14 @@ def main(args):
     prices = {x.ticker: None for x in get_tickers()}
     cur = conn.cursor()
     for ticker in prices.keys():
+        print('Updating prices for ' + ticker + '...')
         tse_ticker = 'TSE:' + ticker[:-3]  # e.g. TSE:VAB rather than VAB.TO
         page = req.urlopen('https://www.google.com/finance/historical?q=' + tse_ticker + '&startdate=Jan+01%2c+2017').read()
         soup = BeautifulSoup(page, 'html5lib')
         table = soup.find('table', class_='gf-table historical_price')
 
         counter = 0
+        inserted = 0
         format = '%b %d, %Y'
         for td in table.find_all('td'):
             if counter == 0:
@@ -62,6 +64,9 @@ def main(args):
                         'day': day,
                         'close': close
                     })
+                inserted += cur.rowcount
+
+        print(str(inserted) + ' prices updated')
 
     cur.close()
     conn.commit()
