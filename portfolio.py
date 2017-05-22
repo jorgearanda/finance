@@ -149,8 +149,12 @@ class Portfolio():
         first_day['dayProfitOrLoss'] = Decimal(0)
         first_day['dayReturns'] = Decimal(0)
         first_day['profitOrLoss'] = Decimal(0)
+        first_day['totalReturns'] = Decimal(0)
+        first_day['totalReturnsAnnualized'] = Decimal(0)
         first_day['ttwr'] = Decimal(0)
+        first_day['ttwrAnnualized'] = Decimal(0)
         first_day['mwrr'] = Decimal(0)
+        first_day['mwrrAnnualized'] = Decimal(0)
         first_day['volatility'] = None
         first_day['10kEquivalent'] = Decimal(10000)
         first_day['lastPeakTtwr'] = Decimal(0)
@@ -250,8 +254,12 @@ class Portfolio():
             data['dayProfitOrLoss'] = data['marketValue'] - data['dayDeposits'] - prev['marketValue']
             data['dayReturns'] = data['dayProfitOrLoss'] / prev['marketValue']
             data['profitOrLoss'] = data['marketValue'] - data['totalDeposits']
+            data['totalReturns'] = data['profitOrLoss'] / data['totalDeposits']
+            data['totalReturnsAnnualized'] = cagr(Decimal(1), Decimal(1) + data['totalReturns'], days=days_from_start)
             data['ttwr'] = (prev['ttwr'] + 1) * (data['dayReturns'] + 1) - 1
+            data['ttwrAnnualized'] = cagr(Decimal(1), Decimal(1) + data['ttwr'], days=days_from_start)
             data['mwrr'] = data['profitOrLoss'] / data['averageCapital']
+            data['mwrrAnnualized'] = cagr(Decimal(1), Decimal(1) + data['mwrr'], days=days_from_start)
             data['10kEquivalent'] = prev['10kEquivalent'] * (1 + data['dayReturns'])
 
             if data['open']:
