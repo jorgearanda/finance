@@ -41,7 +41,7 @@ def main(args):
     for ticker in prices.keys():
         print('Updating prices for ' + ticker + '...')
         tse_ticker = 'TSE:' + ticker[:-3]  # e.g. TSE:VAB rather than VAB.TO
-        page = req.urlopen('https://www.google.com/finance/historical?q=' + tse_ticker + '&startdate=Jan+01%2c+2017').read()
+        page = req.urlopen('https://www.google.com/finance/historical?q=' + tse_ticker).read()
         soup = BeautifulSoup(page, 'html5lib')
         table = soup.find('table', class_='gf-table historical_price')
 
