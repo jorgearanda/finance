@@ -1,5 +1,6 @@
 CREATE TYPE taxCategory AS ENUM ('deferred', 'free', 'taxable', 'restricted');
 CREATE TYPE transactionType AS ENUM ('deposit', 'buy', 'dividend', 'sale', 'withdrawal');
+CREATE TYPE distributionType AS ENUM ('income', 'capital gains');
 
 CREATE TABLE IF NOT EXISTS accountTypes (
     name text unique not null primary key,
@@ -54,6 +55,18 @@ CREATE TABLE IF NOT EXISTS assetPrices (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ticker_day ON assetPrices (
+    ticker ASC,
+    day ASC
+);
+
+CREATE TABLE IF NOT EXISTS distributions (
+    ticker text not null references assets(ticker),
+    day date not null default current_date references marketDays(day),
+    type distributionType not null default 'income',
+    amount numeric(9, 6)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ticker_day_distrib ON distributions (
     ticker ASC,
     day ASC
 );
