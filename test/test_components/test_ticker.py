@@ -51,4 +51,32 @@ def test_values(simple):
     assert vcn.change_from_start(date(2017, 3, 5)) == approx(30.10 / 30.00 - 1)
     assert vcn.change_from_start(date(2017, 3, 6)) == approx(29.85 / 30.00 - 1)
 
+    assert vcn.distribution(date(2017, 3, 1)) is None
+    assert vcn.distribution(date(2017, 3, 2)) == approx(0)
+    assert vcn.distribution(date(2017, 3, 3)) == approx(0.1010)
+    assert vcn.distribution(date(2017, 3, 4)) == approx(0)
+    assert vcn.distribution(date(2017, 3, 5)) == approx(0)
+    assert vcn.distribution(date(2017, 3, 6)) == approx(0.0990)
+
+    assert vcn.distributions_from_start(date(2017, 3, 1)) is None
+    assert vcn.distributions_from_start(date(2017, 3, 2)) == approx(0)
+    assert vcn.distributions_from_start(date(2017, 3, 3)) == approx(0.1010)
+    assert vcn.distributions_from_start(date(2017, 3, 4)) == approx(0.1010)
+    assert vcn.distributions_from_start(date(2017, 3, 5)) == approx(0.1010)
+    assert vcn.distributions_from_start(date(2017, 3, 6)) == approx(0.2)
+
+    assert vcn.yield_from_start(date(2017, 3, 1)) is None
+    assert vcn.yield_from_start(date(2017, 3, 2)) == approx(0)
+    assert vcn.yield_from_start(date(2017, 3, 3)) == approx(0.1010 / 30.10)
+    assert vcn.yield_from_start(date(2017, 3, 4)) == approx(0.1010 / 30.10)
+    assert vcn.yield_from_start(date(2017, 3, 5)) == approx(0.1010 / 30.10)
+    assert vcn.yield_from_start(date(2017, 3, 6)) == approx(0.2 / 29.85)
+
+    assert vcn.returns(date(2017, 3, 1)) is None
+    assert vcn.returns(date(2017, 3, 2)) == approx(0)
+    assert vcn.returns(date(2017, 3, 3)) == \
+        approx(vcn.change_from_start(date(2017, 3, 3)) + vcn.yield_from_start(date(2017, 3, 3)))
+    assert vcn.returns(date(2017, 3, 6)) == \
+        approx(vcn.change_from_start(date(2017, 3, 6)) + vcn.yield_from_start(date(2017, 3, 6)))
+
     assert vcn.volatility == approx(vcn.values[(vcn.values.open)]['change'].std(axis=0))

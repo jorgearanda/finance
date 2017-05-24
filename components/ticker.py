@@ -12,6 +12,10 @@ class Ticker():
     price(date) -- Return the closing price of the ticker on this date
     change(date) -- Return the percentage price change from the date before
     change_from_start(date) -- Return the percentage price change from the initial value
+    distribution(date) -- Return the per-unit distribution on the requested date
+    distributions_from_start(date) -- Return the accumulated per-unit cash distributions until the requested date
+    yield_from_start(date) -- Return the yield (distributions over price) from the start date until the requested one
+    returns(date) -- Return the percentage of returns to this date, considering appreciation and distributions
 
     Instance variables:
     ticker_name -- Name of the ticker
@@ -19,6 +23,10 @@ class Ticker():
         - a `price` float column with the ticker's closing price
         - a `change` float column with the percentage price change from the day before
         - a `change_from_start` float column with the percentage price change from the initial value
+        - a `distributions` float column with per-unit distributions on this date
+        - a `distributions_from_start` float column with accumulated distributions per unit
+        - a `yield_from_start` float column with the total percentage yield on this date
+        - a `returns` float column with the returns (as percentage) considering appreciations and distributions
     volatility -- Standard deviation of the price changes (that is, of the `change` series)
     """
 
@@ -64,6 +72,62 @@ class Ticker():
         except KeyError:
             return None
 
+    def distribution(self, day):
+        """Report the per-unit cash distribution on the requested date.
+
+        Keyword arguments:
+        day -- the requested day, in datetime.date format
+
+        Returns:
+        Float -- the per-unit cash distribution, zero if none, NaN if out of scope
+        """
+        try:
+            return self.values.loc[day]['distribution']
+        except KeyError:
+            return None
+
+    def distributions_from_start(self, day):
+        """Report the accumulated per-unit cash distribution up to the requested date.
+
+        Keyword arguments:
+        day -- the requested day, in datetime.date format
+
+        Returns:
+        Float -- the accumulated per-unit cash distribution, zero if none, NaN if out of scope
+        """
+        try:
+            return self.values.loc[day]['distributions_from_start']
+        except KeyError:
+            return None
+
+    def yield_from_start(self, day):
+        """Report the per-unit yield on the requested date.
+
+        Keyword arguments:
+        day -- the requested day, in datetime.date format
+
+        Returns:
+        Float -- the yield (the percentage of accumulated distributions over the price). NaN if out of scope
+        """
+        try:
+            return self.values.loc[day]['yield_from_start']
+        except KeyError:
+            return None
+
+    def returns(self, day):
+        """Report the per-unit total returns as a percentage, considering appreciation and distributions.
+
+        Keyword arguments:
+        day -- the requested day, in datetime.date format
+
+        Returns:
+        Float -- the per-unit returns, NaN if out of scope
+        """
+        try:
+            return self.values.loc[day]['returns']
+        except KeyError:
+            return None
+
     def __init__(self, ticker_name, from_day=None):
         """Instantiate a Ticker object.
 
@@ -83,7 +147,14 @@ class Ticker():
         _days = Days(from_day).days
         _changes = self._calc_changes(_prices)
         _changes_from_start = self._calc_changes_from_start(_prices)
-        self.values = pd.concat([_prices, _days, _changes, _changes_from_start], axis=1)
+        _distributions = self._get_distributions(ticker_name, from_day)
+        _distributions_from_start = self._calc_distributions_from_start(_distributions)
+        _yield_from_start = self._calc_yield_from_start(_prices, _distributions_from_start)
+        _returns = self._calc_returns(_changes_from_start, _yield_from_start)
+        self.values = pd.concat(
+            [_prices, _days, _changes, _changes_from_start,
+            _distributions, _distributions_from_start, _yield_from_start, _returns],
+            axis=1)
         self.volatility = self._get_volatility()
 
     def __repr__(self):
@@ -149,7 +220,54 @@ class Ticker():
 
         return _changes_from_start
 
+    def _get_distributions(self, ticker_name, from_day):
+        """Create a dataframe with the ticker's per-unit cash distributions."""
+        db.ensure_connected()
+        with db.conn.cursor() as cur:
+            cur.execute('''
+                WITH tickerdistributions AS
+                    (SELECT day, amount FROM distributions WHERE ticker = %(ticker_name)s)
+                SELECT m.day, COALESCE(d.amount, 0) AS distribution
+                FROM marketdays m LEFT JOIN tickerdistributions d USING (day)
+                WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
+                ORDER BY m.day ASC;''',
+                {'ticker_name': ticker_name, 'from_day': from_day, 'today': date.today()})
+
+            _distributions = pd.DataFrame(cur.fetchall())
+            if not _distributions.empty:
+                _distributions = _distributions.set_index('day')
+                _distributions = _distributions.astype('float')
+
+        return _distributions
+
+    def _calc_distributions_from_start(self, _distributions):
+        """Calculate per-unit accumulated cash distributions."""
+        _distributions_from_start = pd.DataFrame(_distributions, columns=['distributions_from_start'])
+        amount = 0.0
+        for day, row in _distributions.iterrows():
+            amount += row['distribution']
+            _distributions_from_start.loc[day]['distributions_from_start'] = amount
+
+        return _distributions_from_start
+
+    def _calc_yield_from_start(self, _prices, _d):
+        """Calculate per-unit yields from the start date."""
+        _yield_from_start = pd.DataFrame(_prices, columns=['yield_from_start'])
+        for day, row in _prices.iterrows():
+            _yield_from_start.loc[day]['yield_from_start'] = _d.loc[day]['distributions_from_start'] / row['price']
+
+        return _yield_from_start
+
+    def _calc_returns(self, _changes, _yields):
+        """Calculate per-unit returns from the start date."""
+        _returns = pd.DataFrame(_changes, columns=['returns'])
+        for day, row in _changes.iterrows():
+            _returns.loc[day]['returns'] = row['change_from_start'] + _yields.loc[day]['yield_from_start']
+
+        return _returns
+
     def _get_volatility(self):
+        """Calculate ticker price volatility."""
         if self.values.empty:
             return None
         else:

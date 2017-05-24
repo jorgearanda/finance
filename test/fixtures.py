@@ -36,8 +36,14 @@ def simple():
                 ('VEE.TO', '2017-03-03', 28.00),
                 ('VEE.TO', '2017-03-06', 32.00),
                 ('VEE.TO', '2017-03-07', 31.00);''')
+        cur.execute('''
+            INSERT INTO distributions (ticker, day, amount)
+            VALUES
+                ('VCN.TO', '2017-03-03', 0.1010),
+                ('VCN.TO', '2017-03-06', 0.0990);''')
     yield True
     with db.conn.cursor() as cur:
+        cur.execute('''DELETE FROM distributions;''')
         cur.execute('''DELETE FROM assetprices;''')
         cur.execute('''DELETE FROM marketdays;''')
         cur.execute('''DELETE FROM assets;''')
