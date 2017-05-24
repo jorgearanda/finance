@@ -31,117 +31,56 @@ class Ticker():
     """
 
     def price(self, day):
-        """Report the closing price for this ticker on the requested day.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the closing price on the requested day, or None if out of scope
-        """
+        """Report the closing price for this ticker on the requested day."""
         try:
             return self.values.loc[day]['price']
         except KeyError:
             return None
 
     def change(self, day):
-        """Report the percentage price change from the date before.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the percentage price change, or NaN if one could not be calculated
-        """
+        """Report the percentage price change from the date before."""
         try:
             return self.values.loc[day]['change']
         except KeyError:
             return None
 
     def change_from_start(self, day):
-        """Report the percentage price change from the initial value.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the percentage price change, or NaN if one could not be calculated
-        """
+        """Report the percentage price change from the initial value."""
         try:
             return self.values.loc[day]['change_from_start']
         except KeyError:
             return None
 
     def distribution(self, day):
-        """Report the per-unit cash distribution on the requested date.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the per-unit cash distribution, zero if none, NaN if out of scope
-        """
+        """Report the per-unit cash distribution on the requested date."""
         try:
             return self.values.loc[day]['distribution']
         except KeyError:
             return None
 
     def distributions_from_start(self, day):
-        """Report the accumulated per-unit cash distribution up to the requested date.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the accumulated per-unit cash distribution, zero if none, NaN if out of scope
-        """
+        """Report the accumulated per-unit cash distribution up to the requested date."""
         try:
             return self.values.loc[day]['distributions_from_start']
         except KeyError:
             return None
 
     def yield_from_start(self, day):
-        """Report the per-unit yield on the requested date.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the yield (the percentage of accumulated distributions over the price). NaN if out of scope
-        """
+        """Report the per-unit yield on the requested date."""
         try:
             return self.values.loc[day]['yield_from_start']
         except KeyError:
             return None
 
     def returns(self, day):
-        """Report the per-unit total returns as a percentage, considering appreciation and distributions.
-
-        Keyword arguments:
-        day -- the requested day, in datetime.date format
-
-        Returns:
-        Float -- the per-unit returns, NaN if out of scope
-        """
+        """Report the per-unit total returns as a percentage, considering appreciation and distributions."""
         try:
             return self.values.loc[day]['returns']
         except KeyError:
             return None
 
     def __init__(self, ticker_name, from_day=None):
-        """Instantiate a Ticker object.
-
-        The Ticker object will contain the closing prices of `ticker_name`
-        for all dates since `from_day` until yesterday.
-        As is convention elsewhere in the code, a `from_day` value of None
-        will extract all available dates and prices for this ticker until yesterday.
-        This class will fill in prices for dates where the market is closed,
-        using the last available closing price.
-
-        Keyword arguments:
-        ticker_name -- name of the ticker
-        from_day -- the first day in the sequence, in datetime.date format (default None)
-        """
+        """Instantiate a Ticker object."""
         self.ticker_name = ticker_name
         _prices = self._get_prices(ticker_name, from_day)
         _days = Days(from_day).days
