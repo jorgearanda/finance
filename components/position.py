@@ -13,20 +13,17 @@ class Position():
         - a `units` float column with the held units of this ticker on this date
         - a `cost` float column with the price paid in total for the position
         - a `cost_per_unit` float column with the price paid per unit on average
-        - a `price` float column with the ticker's closing price
+        - a `current_price` float column with the ticker's closing price on this date
         - a `market_value` float column with the market value of the position on this date
+        - an `open_profit' float column with the unrealized appreciation profits from this position
+        - a `distributions` float column with the cash value received from distributions on this position
+        - a `distribution_returns` float column representing distributions / cost
+        - an `appreciation_returns` float column representing open_profit / cost
+        - a `total_returns` float column representing distribution_returns + appreciation_returns
     """
 
     def __init__(self, ticker_name, from_day=None):
-        """Instantiate a Position object.
-
-        The Position object will contain data on a portfolio's position of `ticker_name`
-        for all dates since `from_day` until yesterday.
-
-        Keyword arguments:
-        ticker_name -- name of the ticker
-        from_day -- the first day in the sequence, in datetime.date format (default None)
-        """
+        """Instantiate a Position object."""
         self.ticker_name = ticker_name
         # TODO - the rest of the initialization
         self.values = pd.DataFrame()
