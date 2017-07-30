@@ -56,15 +56,16 @@ def main(args):
             counter += 1
             if counter > 5:
                 counter = 0
-                cur.execute('''
-                    INSERT INTO assetprices (ticker, day, ask, bid, close)
-                    VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s) ON CONFLICT DO NOTHING;''',
-                    {
-                        'ticker': ticker,
-                        'day': day,
-                        'close': close
-                    })
-                inserted += cur.rowcount
+                if day != date.today():
+                    cur.execute('''
+                        INSERT INTO assetprices (ticker, day, ask, bid, close)
+                        VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s) ON CONFLICT DO NOTHING;''',
+                        {
+                            'ticker': ticker,
+                            'day': day,
+                            'close': close
+                        })
+                    inserted += cur.rowcount
 
         print(str(inserted) + ' prices updated')
 
