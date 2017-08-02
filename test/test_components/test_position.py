@@ -19,3 +19,13 @@ def test_position_class_instantiates():
     assert vcn.ticker_name == 'VCN.TO'
     assert 'Empty' in vcn.__repr__()
     assert 'Empty' in str(vcn)
+
+
+def test_position_class_instantiates_with_data(simple):
+    with freeze_time(dt(2017, 3, 7)):
+        vcn = Position('VCN.TO')
+
+    assert vcn is not None
+    assert vcn.ticker_name == 'VCN.TO'
+    assert 'total_returns' in vcn.__repr__()
+    assert 'total_returns' in str(vcn)
