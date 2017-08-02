@@ -114,7 +114,7 @@ class Ticker():
                 ORDER BY m.day ASC;''',
                 {'ticker_name': ticker_name, 'from_day': from_day, 'today': date.today()})
 
-            _prices = pd.DataFrame(cur.fetchall())
+            _prices = pd.DataFrame(cur.fetchall(), columns=['day', 'price'])
             if not _prices.empty:
                 _prices = _prices.set_index('day')
                 _prices = _prices.astype('float')
