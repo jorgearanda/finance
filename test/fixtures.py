@@ -58,7 +58,8 @@ def simple():
                 ('2017-03-02', 'deposit', 'RRSP1', null, 'Cash', null, null, null, 10000),
                 ('2017-03-03', 'buy', 'RRSP1', 'Cash', 'VCN.TO', 100, 30.10, 0.35, 3010.35),
                 ('2017-03-03', 'buy', 'RRSP1', 'Cash', 'VEE.TO', 100, 28.00, 0.35, 2800.35),
-                ('2017-03-03', 'dividend', 'RRSP1', 'VCN.TO', 'Cash', 100, 0.0990, 0, 9.90);''')
+                ('2017-03-03', 'dividend', 'RRSP1', 'VCN.TO', 'Cash', 100, 0.1010, 0, 10.10),
+                ('2017-03-06', 'dividend', 'RRSP1', 'VCN.TO', 'Cash', 100, 0.0990, 0, 9.90);''')
 
     yield True
     with db.conn.cursor() as cur:

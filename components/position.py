@@ -8,7 +8,16 @@ class Position():
     """DataFrame-based structure of portfolio positions.
 
     Public methods:
-    --none yet--
+    units(date) -- Return the number of units held in this position for this day
+    cost(date) -- Return the total cost of the units held in this position for this day
+    cost_per_unit(date) -- Return the average cost of the units held in this position on this day
+    current_price(date) -- Return this position ticker's closing price on this day
+    market_value(date) -- Return the market value of the units held in this position on this day
+    open_profit(date) -- Return the unrealized appreciation profits from the units held in this position on this day
+    distributions(date) -- Return the cash value received from distributions on this position up to this day
+    distribution_returns(date) -- Return the accumulated distributions over the cost of the position to this day
+    appreciation_returns(date) -- Return the unrealized appreciation profits over the cost of the position to this day
+    total_returns(date) -- Return the total returns (distribution and appreciation) of the position to this day
 
     Instance variables:
     ticker_name -- Name of the ticker
@@ -24,6 +33,76 @@ class Position():
         - an `appreciation_returns` float column representing open_profit / cost
         - a `total_returns` float column representing distribution_returns + appreciation_returns
     """
+
+    def units(self, day):
+        """Return the number of units held in this position for this day."""
+        try:
+            return self.values.loc[day]['units']
+        except KeyError:
+            return None
+
+    def cost(self, day):
+        """Return the total cost of the units held in this position for this day."""
+        try:
+            return self.values.loc[day]['cost']
+        except KeyError:
+            return None
+
+    def cost_per_unit(self, day):
+        """Return the average cost of the units held in this position on this day."""
+        try:
+            return self.values.loc[day]['cost_per_unit']
+        except KeyError:
+            return None
+
+    def current_price(self, day):
+        """Return the position ticker's closing price on this day."""
+        try:
+            return self.values.loc[day]['current_price']
+        except KeyError:
+            return None
+
+    def market_value(self, day):
+        """Return the market value of the units held in this position on this day."""
+        try:
+            return self.values.loc[day]['market_value']
+        except KeyError:
+            return None
+
+    def open_profit(self, day):
+        """Return the unrealized appreciation profits from the units held in this position on this day."""
+        try:
+            return self.values.loc[day]['open_profit']
+        except KeyError:
+            return None
+
+    def distributions(self, day):
+        """Return the cash value received from distributions on this position up to this day."""
+        try:
+            return self.values.loc[day]['distributions']
+        except KeyError:
+            return None
+
+    def distribution_returns(self, day):
+        """Return the accumulated distributions over the cost of the position to this day."""
+        try:
+            return self.values.loc[day]['distribution_returns']
+        except KeyError:
+            return None
+
+    def appreciation_returns(self, day):
+        """Return the unrealized appreciation profits over the cost of the position to this day."""
+        try:
+            return self.values.loc[day]['appreciation_returns']
+        except KeyError:
+            return None
+
+    def total_returns(self, day):
+        """Return the total returns (distribution and appreciation) of the position to this day."""
+        try:
+            return self.values.loc[day]['total_returns']
+        except KeyError:
+            return None
 
     def __init__(self, ticker_name, account=None, from_day=None):
         """Instantiate a Position object."""
@@ -86,7 +165,7 @@ class Position():
             self.values.loc[day, 'market_value'] = self.values.loc[day, 'units'] * self._ticker.price(day)
             self.values.loc[day, 'open_profit'] = self.values.loc[day, 'market_value'] - self.values.loc[day, 'cost']
             if self.values.loc[day, 'cost'] == 0:
-                self.values.loc[day, 'appreciation_returns'] = float('nan')
+                self.values.loc[day, 'appreciation_returns'] = 0
             else:
                 self.values.loc[day, 'appreciation_returns'] = \
                     self.values.loc[day, 'open_profit'] / self.values.loc[day, 'cost']
@@ -119,7 +198,7 @@ class Position():
 
                 last_distribution = self.values.loc[day, 'distributions']
                 if self.values.loc[day, 'cost'] == 0:
-                    self.values.loc[day, 'distribution_returns'] = float('nan')
+                    self.values.loc[day, 'distribution_returns'] = 0
                 else:
                     self.values.loc[day, 'distribution_returns'] = last_distribution / self.values.loc[day, 'cost']
 
