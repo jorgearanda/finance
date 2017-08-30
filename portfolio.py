@@ -76,9 +76,10 @@ class Portfolio():
             cur.execute('''
                 SELECT day, txtype, account, source, target, units, unitprice, commission, total
                 FROM transactions
-                WHERE %(account)s is null OR account = %(account)s
+                WHERE (%(account)s is null OR account = %(account)s)
+                    AND day < %(today)s
                 ORDER BY day;''',
-                {'account': self.account})
+                {'account': self.account, 'today': date.today()})
 
             for tx in cur.fetchall():
                 if tx.txtype == 'deposit':
