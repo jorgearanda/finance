@@ -26,7 +26,7 @@ def create_account():
     cur.close()
 
 
-def populate_market_days(from_date=date(2016, 10, 10), to_date=date(2016, 12, 31)):
+def populate_market_days(from_date=date(2016, 10, 9), to_date=date(2016, 12, 31)):
     holidays = [date(2016, 10, 10), date(2016, 12, 26), date(2016, 12, 27)]
     cur = unit_utils.conn.cursor()
     day = from_date
@@ -97,9 +97,9 @@ def test_simple_portfolio_creation():
 
     assert pf is not None
     assert pf.performance is not None
-    assert len(pf.performance) == 6
+    assert len(pf.performance) == 7
     dates = list(pf.performance.items())
-    assert dates[0][0] == date(2016, 10, 10)
+    assert dates[0][0] == date(2016, 10, 9)
     assert dates[-1][0] == date(2016, 10, 15)
 
 
@@ -114,9 +114,9 @@ def test_single_account_portfolio_creation():
 
     assert pf is not None
     assert pf.performance is not None
-    assert len(pf.performance) == 6
+    assert len(pf.performance) == 7
     dates = list(pf.performance.items())
-    assert dates[0][0] == date(2016, 10, 10)
+    assert dates[0][0] == date(2016, 10, 9)
     assert dates[-1][0] == date(2016, 10, 15)
 
 

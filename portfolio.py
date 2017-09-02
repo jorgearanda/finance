@@ -45,9 +45,9 @@ class Portfolio():
             cur.execute('''
                 SELECT day, open
                 FROM marketDays
-                WHERE day >= %(created)s AND day < %(today)s
+                WHERE day >= %(creation_eve)s AND day < %(today)s
                 ORDER BY day;''',
-                {'created': self.date_created, 'today': date.today()})
+                {'creation_eve': self.date_created - timedelta(days=1), 'today': date.today()})
 
             for row in cur.fetchall():
                 self.performance[row.day] = {
@@ -141,6 +141,32 @@ class Portfolio():
             prev_data = data
 
     def calculate_dailies(self):
+        zeroth_day = self.performance[self.date_created - timedelta(days=1)]
+        zeroth_day['totalDeposits'] = zeroth_day['dayDeposits']
+        zeroth_day['averageCapital'] = zeroth_day['dayDeposits']
+        zeroth_day['totalDividends'] = zeroth_day['dayDividends']
+        zeroth_day['cash'] = zeroth_day['totalDeposits'] + zeroth_day['totalDividends']
+        zeroth_day['marketValue'] = zeroth_day['cash']
+        zeroth_day['dayProfitOrLoss'] = Decimal(0)
+        zeroth_day['dayReturns'] = Decimal(0)
+        zeroth_day['profitOrLoss'] = Decimal(0)
+        zeroth_day['totalReturns'] = Decimal(0)
+        zeroth_day['totalReturnsAnnualized'] = Decimal(0)
+        zeroth_day['ttwr'] = Decimal(0)
+        zeroth_day['ttwrAnnualized'] = Decimal(0)
+        zeroth_day['mwrr'] = Decimal(0)
+        zeroth_day['mwrrAnnualized'] = Decimal(0)
+        zeroth_day['volatility'] = None
+        zeroth_day['10kEquivalent'] = Decimal(10000)
+        zeroth_day['lastPeakTtwr'] = Decimal(0)
+        zeroth_day['lastPeak10kEquivalent'] = Decimal(10000)
+        zeroth_day['currentDrawdown'] = Decimal(0)
+        zeroth_day['currentDrawdownStart'] = self.date_created
+        zeroth_day['greatestDrawdown'] = Decimal(0)
+        zeroth_day['greatestDrawdownStart'] = self.date_created
+        zeroth_day['greatestDrawdownEnd'] = self.date_created
+        zeroth_day['sharpe'] = Decimal(0)
+
         first_day = self.performance[self.date_created]
         first_day['totalDeposits'] = first_day['dayDeposits']
         first_day['averageCapital'] = first_day['dayDeposits']
@@ -170,7 +196,7 @@ class Portfolio():
         returns_lists = {}
         first_ticker_days = {}
         capital_sums = first_day['totalDeposits']
-        for day, data in [x for x in self.performance.items()][1:]:
+        for day, data in [x for x in self.performance.items()][2:]:
             prev = self.performance[day - timedelta(days=1)]
             days_from_start = (day - self.date_created).days
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
