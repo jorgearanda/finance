@@ -20,6 +20,7 @@ class Position():
     total_returns(date) -- Return the total returns (distribution and appreciation) of the position to this day
 
     Instance variables:
+    account -- Name of the account for this position. All accounts, if None
     ticker_name -- Name of the ticker
     values -- DataFrame indexed by day, with:
         - a `units` float column with the held units of this ticker on this date
@@ -104,12 +105,15 @@ class Position():
         except KeyError:
             return None
 
-    def __init__(self, ticker_name, account=None, from_day=None):
+    def __init__(self, ticker_name, account=None, from_day=None, ticker=None):
         """Instantiate a Position object."""
         self.ticker_name = ticker_name
         self.account = account
         self._from_day = from_day
-        self._ticker = Ticker(ticker_name, from_day)
+        if ticker:
+            self._ticker = ticker
+        else:
+            self._ticker = Ticker(ticker_name, from_day)
         self.values = pd.DataFrame(
             index=self._ticker.values.index,
             columns=['units', 'cost', 'cost_per_unit', 'current_price', 'market_value', 'open_profit', 'distributions',

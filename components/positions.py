@@ -13,8 +13,8 @@ class Positions():
     --none yet--
 
     Instance variables:
+    account -- Name of the account for these positions. All accounts, if None
     ticker_names -- List with the ticker names contained in the object
-    tickers -- Tickers component
     positions -- Dict with ticker names as keys and Position objects as values
     units -- DataFrame, day-indexed, one position per column. Daily number of units held in the position
     costs -- DataFrame, day-indexed, one position per column. Total cost of the units held in the position this day
@@ -28,11 +28,16 @@ class Positions():
     total_returns -- DataFrame, day-indexed, one position per column. Appreciation and distribution returns
     """
 
-    def __init__(self, from_day=None):
+    def __init__(self, account=None, from_day=None, tickers=None):
         """Instantiate a Positions object, with dates starting on from_day."""
-        self.tickers = Tickers(from_day)
-        self.ticker_names = self.tickers.ticker_names
-        self.positions = {name: Position(name, from_day) for name in self.ticker_names}
+        self.account = account
+        if not tickers:
+            tickers = Tickers(from_day)
+        self.ticker_names = tickers.ticker_names
+        self.positions = {
+            name: Position(name, account=account, from_day=from_day, ticker=tickers.tickers[name])
+            for name in self.ticker_names
+        }
         if len(self.ticker_names) > 0:
             self.units = self._collect_feature('units')
             self.costs = self._collect_feature('cost')
