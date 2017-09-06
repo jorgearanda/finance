@@ -25,3 +25,6 @@ def test_deposits_class_holds_deposit_values(simple):
 
     assert len(d.deposits) == 1
     assert d.deposits.loc[date(2017, 3, 2)]['amount'] == 10000
+    assert not d.amount(date(2017, 3, 1))
+    assert d.amount(date(2017, 3, 2)) == 10000
+    assert not d.amount(date(2017, 3, 3))

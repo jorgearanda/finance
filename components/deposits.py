@@ -8,12 +8,19 @@ class Deposits():
     """DataFrame-based structure to keep track of investment deposits.
 
     Public methods:
-    --none yet--
+    amount(date) -- Return the amount deposited on this day
 
     Instance variables:
     account -- str, the account to which the deposits were made
     deposits -- DataFrame, day-indexed, with the total sum deposited on each day
     """
+
+    def amount(self, day):
+        """Return the amount deposited on the requested day. If no deposits on a date, return None rather than zero."""
+        try:
+            return self.deposits.loc[day]['amount']
+        except KeyError:
+            return None
 
     def __init__(self, account=None, from_day=None):
         """Instantiate a Deposits object."""
