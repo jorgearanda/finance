@@ -168,6 +168,7 @@ class Portfolio():
         zeroth_day['sharpe'] = Decimal(0)
 
         first_day = self.performance[self.date_created]
+        first_day['daysFromStart'] = 1
         first_day['totalDeposits'] = first_day['dayDeposits']
         first_day['averageCapital'] = first_day['dayDeposits']
         first_day['totalDividends'] = first_day['dayDividends']
@@ -198,10 +199,11 @@ class Portfolio():
         capital_sums = first_day['totalDeposits']
         for day, data in [x for x in self.performance.items()][2:]:
             prev = self.performance[day - timedelta(days=1)]
-            days_from_start = (day - self.date_created).days
+            days_from_start = (day - self.date_created).days + 1
+            data['daysFromStart'] = days_from_start
             data['totalDeposits'] = data['dayDeposits'] + prev['totalDeposits']
             capital_sums += data['totalDeposits']
-            data['averageCapital'] = capital_sums / (days_from_start + 1)
+            data['averageCapital'] = capital_sums / (days_from_start)
             data['totalDividends'] = data['dayDividends'] + prev['totalDividends']
             data['cash'] = data['totalDeposits'] + data['totalDividends']
 
