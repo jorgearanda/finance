@@ -108,7 +108,7 @@ class Ticker():
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute('''
-                SELECT m.day, p.close AS price
+                SELECT m.day, p.close::double precision AS price
                 FROM marketdays m LEFT JOIN assetprices p USING (day)
                 WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
                 AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
@@ -166,7 +166,7 @@ class Ticker():
         with db.conn.cursor() as cur:
             cur.execute('''
                 WITH tickerdistributions AS
-                    (SELECT day, amount FROM distributions WHERE ticker = %(ticker_name)s)
+                    (SELECT day, amount::double precision FROM distributions WHERE ticker = %(ticker_name)s)
                 SELECT m.day, COALESCE(d.amount, 0) AS distribution
                 FROM marketdays m LEFT JOIN tickerdistributions d USING (day)
                 WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s

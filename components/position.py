@@ -136,7 +136,7 @@ class Position():
         db.ensure_connected()
         with db.conn.cursor() as buys:
             buys.execute('''
-                SELECT day, units, total
+                SELECT day, units::int, total::double precision
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
@@ -177,7 +177,7 @@ class Position():
         db.ensure_connected()
         with db.conn.cursor() as dividends:
             dividends.execute('''
-                SELECT day, total
+                SELECT day, total::double precision
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
