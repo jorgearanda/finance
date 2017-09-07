@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from components.ticker import Ticker
@@ -164,15 +165,13 @@ class Position():
                 last_cost = self.values.loc[day, 'cost']
                 self.values.loc[day, 'cost_per_unit'] = float('nan') if last_units == 0 else last_cost / last_units
 
+            self.values['cost'] = self.values['cost'].astype('float')
+
     def _calc_appreciations(self):
-        for day, row in self.values.iterrows():
-            self.values.loc[day, 'market_value'] = self.values.loc[day, 'units'] * self._ticker.price(day)
-            self.values.loc[day, 'open_profit'] = self.values.loc[day, 'market_value'] - self.values.loc[day, 'cost']
-            if self.values.loc[day, 'cost'] == 0:
-                self.values.loc[day, 'appreciation_returns'] = 0
-            else:
-                self.values.loc[day, 'appreciation_returns'] = \
-                    self.values.loc[day, 'open_profit'] / self.values.loc[day, 'cost']
+        self.values['market_value'] = self.values['units'] * self.values['current_price']
+        self.values['open_profit'] = self.values['market_value'] - self.values['cost']
+        self.values['open_profit'] = self.values['open_profit'].astype('float')
+        self.values['appreciation_returns'] = self.values['open_profit'] / self.values['cost']
 
     def _get_distributions(self):
         db.ensure_connected()

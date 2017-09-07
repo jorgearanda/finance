@@ -85,7 +85,7 @@ def test_values(simple):
     assert vcn.distribution_returns(date(2017, 3, 7)) is None
 
     assert vcn.appreciation_returns(date(2017, 3, 1)) is None
-    assert vcn.appreciation_returns(date(2017, 3, 2)) == 0
+    assert math.isnan(vcn.appreciation_returns(date(2017, 3, 2)))
     assert vcn.appreciation_returns(date(2017, 3, 3)) == (3010.0 - 3010.35) / 3010.35
     assert vcn.appreciation_returns(date(2017, 3, 6)) == (2985.0 - 3010.35) / 3010.35
     assert vcn.appreciation_returns(date(2017, 3, 7)) is None
