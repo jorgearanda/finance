@@ -1,7 +1,7 @@
 from datetime import datetime as dt, date
 from freezegun import freeze_time
 
-from components.days import Days
+from components.market_days import MarketDays
 from db import db
 from test.fixtures import simple
 
@@ -11,20 +11,20 @@ def setup_function():
     db.ensure_connected()
 
 
-def test_days_class_instantiates():
-    d = Days()
+def test_market_days_class_instantiates():
+    d = MarketDays()
     assert d is not None
-    assert 'Empty' in d.__repr__()
-    assert 'Empty' in str(d)
+    assert '[]' in d.__repr__()
+    assert '[]' in str(d)
 
 
 def test_open_is_none_when_no_dates():
-    assert Days().open(date.today()) is None
+    assert MarketDays().open(date.today()) is None
 
 
 def test_open(simple):
     with freeze_time(dt(2017, 3, 7)):
-        d = Days()
+        d = MarketDays()
 
     assert d.open(date(2017, 3, 1)) is None
     assert d.open(date(2017, 3, 2))

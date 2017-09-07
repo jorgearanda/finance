@@ -1,7 +1,7 @@
 from datetime import date
 import pandas as pd
 
-from components.days import Days
+from components.market_days import MarketDays
 from db import db
 
 
@@ -83,7 +83,8 @@ class Ticker():
         """Instantiate a Ticker object."""
         self.ticker_name = ticker_name
         _prices = self._get_prices(ticker_name, from_day)
-        _days = Days(from_day).days
+        _prices['open'] = MarketDays(from_day).market_days
+        # _days = MarketDays(from_day).market_days
         _changes = self._calc_changes(_prices)
         _changes_from_start = self._calc_changes_from_start(_prices)
         _distributions = self._get_distributions(ticker_name, from_day)
@@ -91,7 +92,7 @@ class Ticker():
         _yield_from_start = self._calc_yield_from_start(_prices, _distributions_from_start)
         _returns = self._calc_returns(_changes_from_start, _yield_from_start)
         self.values = pd.concat(
-            [_prices, _days, _changes, _changes_from_start,
+            [_prices, _changes, _changes_from_start,
             _distributions, _distributions_from_start, _yield_from_start, _returns],
             axis=1)
         self.volatility = self._get_volatility()
