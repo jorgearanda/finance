@@ -33,68 +33,69 @@ class Ticker():
     def price(self, day):
         """Report the closing price for this ticker on the requested day."""
         try:
-            return self.values.loc[day]['price']
+            return self.values['price'][day]
         except KeyError:
             return None
 
     def change(self, day):
         """Report the percentage price change from the date before."""
         try:
-            return self.values.loc[day]['change']
+            return self.values['change'][day]
         except KeyError:
             return None
 
     def change_from_start(self, day):
         """Report the percentage price change from the initial value."""
         try:
-            return self.values.loc[day]['change_from_start']
+            return self.values['change_from_start'][day]
         except KeyError:
             return None
 
     def distribution(self, day):
         """Report the per-unit cash distribution on the requested date."""
         try:
-            return self.values.loc[day]['distribution']
+            return self.values['distribution'][day]
         except KeyError:
             return None
 
     def distributions_from_start(self, day):
         """Report the accumulated per-unit cash distribution up to the requested date."""
         try:
-            return self.values.loc[day]['distributions_from_start']
+            return self.values['distributions_from_start'][day]
         except KeyError:
             return None
 
     def yield_from_start(self, day):
         """Report the per-unit yield on the requested date."""
         try:
-            return self.values.loc[day]['yield_from_start']
+            return self.values['yield_from_start'][day]
         except KeyError:
             return None
 
     def returns(self, day):
         """Report the per-unit total returns as a percentage, considering appreciation and distributions."""
         try:
-            return self.values.loc[day]['returns']
+            return self.values['returns'][day]
         except KeyError:
             return None
 
     def __init__(self, ticker_name, from_day=None):
         """Instantiate a Ticker object."""
         self.ticker_name = ticker_name
-        _prices = self._get_prices(ticker_name, from_day)
-        _prices['open'] = MarketDays(from_day).market_days
-        # _days = MarketDays(from_day).market_days
-        _changes = self._calc_changes(_prices)
-        _changes_from_start = self._calc_changes_from_start(_prices)
-        _distributions = self._get_distributions(ticker_name, from_day)
-        _distributions_from_start = self._calc_distributions_from_start(_distributions)
-        _yield_from_start = self._calc_yield_from_start(_prices, _distributions_from_start)
-        _returns = self._calc_returns(_changes_from_start, _yield_from_start)
-        self.values = pd.concat(
-            [_prices, _changes, _changes_from_start,
-            _distributions, _distributions_from_start, _yield_from_start, _returns],
-            axis=1)
+        self.from_day = from_day
+        _days = MarketDays(from_day).market_days
+        self.values = pd.DataFrame(_days, index=_days.index, columns=['open'])
+        self.values['price'] = self._get_prices()
+        self.values['change'] = (self.values['price'] / self.values['price'].shift(1)) - 1.0
+        first_price_index = self.values['price'].first_valid_index()
+        if first_price_index:
+            self.values['change_from_start'] = (self.values['price'] / self.values['price'][first_price_index]) - 1.0
+        else:  # there are no valid prices!
+            self.values['change_from_start'] = 0.0
+        self.values['distribution'] = self._get_distributions()
+        self.values['distributions_from_start'] = self.values['distribution'].cumsum()
+        self.values['yield_from_start'] = self.values['distributions_from_start'] / self.values['price']
+        self.values['returns'] = self.values['change_from_start'] + self.values['yield_from_start']
         self.volatility = self._get_volatility()
 
     def __repr__(self):
@@ -103,108 +104,47 @@ class Ticker():
     def __str__(self):
         return str(self.values.head())
 
-    def _get_prices(self, ticker_name, from_day):
-        """Create a dataframe with the ticker's closing prices."""
+    def _get_prices(self):
+        """Create a Series with the ticker's closing prices."""
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute('''
-                SELECT m.day, p.close::double precision AS price
+                SELECT p.close::double precision AS price, m.day
                 FROM marketdays m LEFT JOIN assetprices p USING (day)
                 WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
                 AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
                 ORDER BY m.day ASC;''',
-                {'ticker_name': ticker_name, 'from_day': from_day, 'today': date.today()})
+                {'ticker_name': self.ticker_name, 'from_day': self.from_day, 'today': date.today()})
 
-            _prices = pd.DataFrame(cur.fetchall(), columns=['day', 'price'])
-            if not _prices.empty:
-                _prices = _prices.set_index('day')
-                _prices = _prices.astype('float')
-
-        _prices = self._fill_price_gaps(_prices)
-        return _prices
-
-    def _fill_price_gaps(self, _prices):
-        """Use the last available price on days where we do not have a closing price."""
-        last_price = None
-        for _, row in _prices.iterrows():
-            if not pd.isnull(row['price']):
-                last_price = row['price']
+            if cur.rowcount > 0:
+                records = list(zip(*cur.fetchall()))  # two sublists: the first of prices, the second of days
             else:
-                row['price'] = last_price
+                records = [None, None]
+
+        _prices = pd.Series(records[0], index=records[1], dtype=float)
+        _prices.fillna(method='ffill', inplace=True)
 
         return _prices
 
-    def _calc_changes(self, _prices):
-        """Calculate the price changes from the date before."""
-        _changes = pd.DataFrame(_prices, columns=['change'])
-
-        prev_price = None
-        for day, row in _prices.iterrows():
-            if not pd.isnull(row['price']):
-                if prev_price is not None:
-                    _changes.loc[day]['change'] = (row['price'] / prev_price) - 1
-                prev_price = row['price']
-
-        return _changes
-
-    def _calc_changes_from_start(self, _prices):
-        """Calculate the price changes from the first available price."""
-        _changes_from_start = pd.DataFrame(_prices, columns=['change_from_start'])
-
-        start_price = None
-        for day, row in _prices.iterrows():
-            if not pd.isnull(row['price']):
-                if start_price is None:
-                    start_price = row['price']
-                _changes_from_start.loc[day]['change_from_start'] = (row['price'] / start_price) - 1
-
-        return _changes_from_start
-
-    def _get_distributions(self, ticker_name, from_day):
+    def _get_distributions(self):
         """Create a dataframe with the ticker's per-unit cash distributions."""
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute('''
                 WITH tickerdistributions AS
                     (SELECT day, amount::double precision FROM distributions WHERE ticker = %(ticker_name)s)
-                SELECT m.day, COALESCE(d.amount, 0) AS distribution
+                SELECT COALESCE(d.amount, 0) AS distribution, m.day
                 FROM marketdays m LEFT JOIN tickerdistributions d USING (day)
                 WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
                 ORDER BY m.day ASC;''',
-                {'ticker_name': ticker_name, 'from_day': from_day, 'today': date.today()})
+                {'ticker_name': self.ticker_name, 'from_day': self.from_day, 'today': date.today()})
 
-            _distributions = pd.DataFrame(cur.fetchall())
-            if not _distributions.empty:
-                _distributions = _distributions.set_index('day')
-                _distributions = _distributions.astype('float')
+            if cur.rowcount > 0:
+                records = list(zip(*cur.fetchall()))  # two sublists: the first of distributions, the second of days
+            else:
+                records = [None, None]
 
-        return _distributions
-
-    def _calc_distributions_from_start(self, _distributions):
-        """Calculate per-unit accumulated cash distributions."""
-        _distributions_from_start = pd.DataFrame(_distributions, columns=['distributions_from_start'])
-        amount = 0.0
-        for day, row in _distributions.iterrows():
-            amount += row['distribution']
-            _distributions_from_start.loc[day]['distributions_from_start'] = amount
-
-        return _distributions_from_start
-
-    def _calc_yield_from_start(self, _prices, _d):
-        """Calculate per-unit yields from the start date."""
-        _yield_from_start = pd.DataFrame(_prices, columns=['yield_from_start'])
-        for day, row in _prices.iterrows():
-            _yield_from_start.loc[day]['yield_from_start'] = _d.loc[day]['distributions_from_start'] / row['price']
-
-        return _yield_from_start
-
-    def _calc_returns(self, _changes, _yields):
-        """Calculate per-unit returns from the start date."""
-        _returns = pd.DataFrame(_changes, columns=['returns'])
-        for day, row in _changes.iterrows():
-            _returns.loc[day]['returns'] = row['change_from_start'] + _yields.loc[day]['yield_from_start']
-
-        return _returns
+        return pd.Series(records[0], index=records[1], dtype=float)
 
     def _get_volatility(self):
         """Calculate ticker price volatility."""
