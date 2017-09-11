@@ -39,70 +39,70 @@ class Position():
     def units(self, day):
         """Return the number of units held in this position for this day."""
         try:
-            return self.values.loc[day]['units']
+            return self.values['units'][day]
         except KeyError:
             return None
 
     def cost(self, day):
         """Return the total cost of the units held in this position for this day."""
         try:
-            return self.values.loc[day]['cost']
+            return self.values['cost'][day]
         except KeyError:
             return None
 
     def cost_per_unit(self, day):
         """Return the average cost of the units held in this position on this day."""
         try:
-            return self.values.loc[day]['cost_per_unit']
+            return self.values['cost_per_unit'][day]
         except KeyError:
             return None
 
     def current_price(self, day):
         """Return the position ticker's closing price on this day."""
         try:
-            return self.values.loc[day]['current_price']
+            return self.values['current_price'][day]
         except KeyError:
             return None
 
     def market_value(self, day):
         """Return the market value of the units held in this position on this day."""
         try:
-            return self.values.loc[day]['market_value']
+            return self.values['market_value'][day]
         except KeyError:
             return None
 
     def open_profit(self, day):
         """Return the unrealized appreciation profits from the units held in this position on this day."""
         try:
-            return self.values.loc[day]['open_profit']
+            return self.values['open_profit'][day]
         except KeyError:
             return None
 
     def distributions(self, day):
         """Return the cash value received from distributions on this position up to this day."""
         try:
-            return self.values.loc[day]['distributions']
+            return self.values['distributions'][day]
         except KeyError:
             return None
 
     def distribution_returns(self, day):
         """Return the accumulated distributions over the cost of the position to this day."""
         try:
-            return self.values.loc[day]['distribution_returns']
+            return self.values['distribution_returns'][day]
         except KeyError:
             return None
 
     def appreciation_returns(self, day):
         """Return the unrealized appreciation profits over the cost of the position to this day."""
         try:
-            return self.values.loc[day]['appreciation_returns']
+            return self.values['appreciation_returns'][day]
         except KeyError:
             return None
 
     def total_returns(self, day):
         """Return the total returns (distribution and appreciation) of the position to this day."""
         try:
-            return self.values.loc[day]['total_returns']
+            return self.values['total_returns'][day]
         except KeyError:
             return None
 
@@ -110,21 +110,25 @@ class Position():
         """Instantiate a Position object."""
         self.ticker_name = ticker_name
         self.account = account
-        self._from_day = from_day
+        self.from_day = from_day
         if ticker:
             self._ticker = ticker
         else:
             self._ticker = Ticker(ticker_name, from_day)
-        self.values = pd.DataFrame(
-            index=self._ticker.values.index,
-            columns=['units', 'cost', 'cost_per_unit', 'current_price', 'market_value', 'open_profit', 'distributions',
-                'distribution_returns', 'appreciation_returns', 'total_returns'])
+
+        self.values = pd.DataFrame(index=self._ticker.values.index, columns=['current_price'])
 
         self.values['current_price'] = self._ticker.values['price']
-        self._get_units_and_costs()
-        self._calc_appreciations()
-        self._get_distributions()
-        self._calc_total_returns()
+        self.values['units'], self.values['cost'] = self._get_units_and_costs()
+        self.values['cost_per_unit'] = self.values['cost'] / self.values['units']
+        self.values['market_value'] = self.values['units'] * self.values['current_price']
+        self.values['open_profit'] = self.values['market_value'] - self.values['cost']
+        self.values['open_profit'] = self.values['open_profit'].astype('float')
+        self.values['appreciation_returns'] = self.values['open_profit'] / self.values['cost']
+        self.values['distributions'] = self._get_distributions()
+        self.values['distribution_returns'] = self.values['distributions'] / self.values['cost']
+        self.values['total_returns'] = \
+            self.values.fillna(0)['distribution_returns'] + self.values.fillna(0)['appreciation_returns']
 
     def __repr__(self):
         return str(self.values.head())
@@ -134,77 +138,48 @@ class Position():
 
     def _get_units_and_costs(self):
         db.ensure_connected()
-        with db.conn.cursor() as buys:
-            buys.execute('''
-                SELECT day, units::int, total::double precision
+        with db.conn.cursor() as cur:
+            cur.execute('''
+                SELECT SUM(units)::int AS units, SUM(total)::double precision AS total, day
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND txtype = 'buy'
                     AND target = %(ticker_name)s
-                ORDER BY day;''',
-                {
-                    'account': self.account,
-                    'from_day': self._from_day,
-                    'ticker_name': self.ticker_name
-                })
+                GROUP BY day
+                ORDER BY day ASC;''',
+                {'account': self.account, 'from_day': self.from_day, 'ticker_name': self.ticker_name})
 
-            next_buy = buys.fetchone()
-            last_units = 0.0
-            last_cost = 0.0
+            if cur.rowcount > 0:
+                records = list(zip(*cur.fetchall()))  # three sublists: units, total, days
+            else:
+                records = [None, None, None]
 
-            for day, row in self.values.iterrows():
-                self.values.loc[day, 'units'] = last_units
-                self.values.loc[day, 'cost'] = last_cost
-                while next_buy is not None and day == next_buy.day:
-                    self.values.loc[day, 'units'] += float(next_buy.units)
-                    self.values.loc[day, 'cost'] += float(next_buy.total)
-                    next_buy = buys.fetchone()
-
-                last_units = self.values.loc[day, 'units']
-                last_cost = self.values.loc[day, 'cost']
-                self.values.loc[day, 'cost_per_unit'] = float('nan') if last_units == 0 else last_cost / last_units
-
-            self.values['cost'] = self.values['cost'].astype('float')
-
-    def _calc_appreciations(self):
-        self.values['market_value'] = self.values['units'] * self.values['current_price']
-        self.values['open_profit'] = self.values['market_value'] - self.values['cost']
-        self.values['open_profit'] = self.values['open_profit'].astype('float')
-        self.values['appreciation_returns'] = self.values['open_profit'] / self.values['cost']
+        _units = pd.Series(records[0], index=records[2], dtype=int)
+        _units = _units.reindex(self.values.index).fillna(0).cumsum()
+        _costs = pd.Series(records[1], index=records[2], dtype=float)
+        _costs = _costs.reindex(self.values.index).fillna(0).cumsum()
+        return _units, _costs
 
     def _get_distributions(self):
         db.ensure_connected()
-        with db.conn.cursor() as dividends:
-            dividends.execute('''
-                SELECT day, total::double precision
+        with db.conn.cursor() as cur:
+            cur.execute('''
+                SELECT SUM(total)::double precision AS total, day
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND txtype = 'dividend'
                     AND source = %(ticker_name)s
-                ORDER BY day;''',
-                {
-                    'account': self.account,
-                    'from_day': self._from_day,
-                    'ticker_name': self.ticker_name
-                })
+                GROUP BY day
+                ORDER BY day ASC;''',
+                {'account': self.account, 'from_day': self.from_day, 'ticker_name': self.ticker_name})
 
-            next_dividend = dividends.fetchone()
-            last_distribution = 0.0
+            if cur.rowcount > 0:
+                records = list(zip(*cur.fetchall()))  # two sublists: total, days
+            else:
+                records = [None, None]
 
-            for day, row in self.values.iterrows():
-                self.values.loc[day, 'distributions'] = last_distribution
-                while next_dividend is not None and day == next_dividend.day:
-                    self.values.loc[day, 'distributions'] += float(next_dividend.total)
-                    next_dividend = dividends.fetchone()
-
-                last_distribution = self.values.loc[day, 'distributions']
-                if self.values.loc[day, 'cost'] == 0:
-                    self.values.loc[day, 'distribution_returns'] = 0
-                else:
-                    self.values.loc[day, 'distribution_returns'] = last_distribution / self.values.loc[day, 'cost']
-
-    def _calc_total_returns(self):
-        self.values['total_returns'] = \
-            self.values.fillna(0)['distribution_returns'] + self.values.fillna(0)['appreciation_returns']
+        _distributions = pd.Series(records[0], index=records[1], dtype=float)
+        _distributions = _distributions.reindex(self.values.index).fillna(0).cumsum()
+        return _distributions
