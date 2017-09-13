@@ -18,7 +18,7 @@ class Deposits():
     def amount(self, day):
         """Return the amount deposited on the requested day. If no deposits on a date, return None rather than zero."""
         try:
-            return self.deposits.loc[day]['amount']
+            return self.deposits['amount'][day]
         except KeyError:
             return None
 
@@ -37,7 +37,7 @@ class Deposits():
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute('''
-                SELECT day, SUM(total) AS amount
+                SELECT SUM(total)::double precision AS amount, day
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
@@ -53,3 +53,5 @@ class Deposits():
                 _deposits = _deposits.astype('float')
 
         return _deposits
+
+
