@@ -39,7 +39,7 @@ class Portfolio():
         - `mwrr_annualized` float, annualized money-weighted real returns
         - `volatility` float, volatility of the portfolio as a whole
         - `10k_equivalent` float, value of a hypothetical 10k dollars invested with this strategy from the start
-        - `last_peak_twrr` float, time-weighted returns at the highest point in the lifetime of the portfolio
+        - `last_peak_twrr` float, time-weighted returns at the highest point in the lifetime of the portfolio to date
         - `current_drawdown` float, percentage drop in returns from the last peak
         - `current_drawdown_start` date, date when the current drawdown began
         - `greatest_drawdown` float, greatest percentage drop in returns in the lifetime of the portfolio
@@ -64,3 +64,9 @@ class Portfolio():
         self.daily['dividends'] = self.positions.distributions.sum(axis=1)
         self.daily['cash'] = self.daily['capital'] + self.daily['dividends'] - self.positions.costs.sum(axis=1)
         self.daily['market_value'] = self.daily['cash'] + self.positions.market_values.sum(axis=1)
+        self.daily['daily_profit'] = self.daily['market_value'] - self.daily['market_value'].shift(1)
+        self.daily['daily_returns'] = self.daily['daily_profit'] / self.daily['market_value'].shift(1)
+        self.daily['profit'] = self.daily['market_value'] - self.daily['capital']
+        self.daily['distribution_returns'] = self.daily['dividends'] / self.daily['capital']
+        self.daily['appreciation_returns'] = self.positions.market_values.sum(axis=1) / self.positions.costs.sum(axis=1) - 1.0
+        self.daily['total_returns'] = self.daily['market_value'] / self.daily['capital'] - 1.0
