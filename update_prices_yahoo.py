@@ -86,6 +86,8 @@ def main(args):
                 continue
             values = line.split(',')
             day = dt.strptime(values[0], '%Y-%m-%d').date()
+            if day > date.today() - timedelta(days=7):
+                print(f'Found ticker for {day}')
             cur.execute('''
                 INSERT INTO assetprices (ticker, day, ask, bid, close)
                 VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s)
