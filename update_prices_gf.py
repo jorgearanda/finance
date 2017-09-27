@@ -24,7 +24,7 @@ conn = None
 
 def connect(env):
     global conn
-    conn = psycopg2.connect(database=config.database[env], cursor_factory=NamedTupleCursor)
+    conn = psycopg2.connect(database=config.db[env]['db'], user=config.db[env]['user'], cursor_factory=NamedTupleCursor)
 
 
 def get_tickers():

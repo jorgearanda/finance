@@ -28,7 +28,7 @@ def clean_postgres():
 
 def setup():
     global conn
-    conn = psycopg2.connect(database=config.database['test'], cursor_factory=NamedTupleCursor)
+    conn = psycopg2.connect(database=config.db['test']['db'], user=config.db['test']['user'], cursor_factory=NamedTupleCursor)
     clean_postgres()
 
 

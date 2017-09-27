@@ -15,7 +15,7 @@ def connect(env=_env):
     Subsequent calls to `connect()` will release any previous connections and reconnect.
 
     Keyword arguments:
-    env -- environment to connect to; must be a key in the `config.database` dict (default 'dev')
+    env -- environment to connect to; must be a key in the `config.db` dict (default 'dev')
 
     Returns:
     bool -- True if the connection is alive
@@ -24,7 +24,7 @@ def connect(env=_env):
     _env = env
 
     global conn
-    conn = psycopg2.connect(database=config.database[env], cursor_factory=NamedTupleCursor)
+    conn = psycopg2.connect(database=config.db[env]['db'], user=config.db[env]['user'], cursor_factory=NamedTupleCursor)
     conn.autocommit = True
 
     return is_alive()

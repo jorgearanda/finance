@@ -15,7 +15,10 @@ from util.cagr import cagr
 class Portfolio():
     def __init__(self, account=None, env='dev', conn=None):
         if conn is None:
-            self.conn = psycopg2.connect(database=config.database[env], cursor_factory=NamedTupleCursor)
+            self.conn = psycopg2.connect(
+                database=config.db[env]['db'],
+                user=config.db[env]['user'],
+                cursor_factory=NamedTupleCursor)
         else:
             self.conn = conn
         self.conn.autocommit = True

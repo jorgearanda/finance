@@ -1,8 +1,14 @@
 from decimal import Decimal
 
 
-database = {
-    'dev': 'finance',
-    'test': 'financetest'
+db = {
+    'dev': {
+        'db': 'finance',
+        'user': 'jorge'
+    },
+    'test': {
+        'db': 'financetest',
+        'user': 'jorge'
+    }
 }
 sharpe = Decimal(0.017)
