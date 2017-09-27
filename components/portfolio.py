@@ -55,6 +55,9 @@ class Portfolio():
         self.deposits = Deposits(account, from_day)
         self.tickers = Tickers(from_day)
         self.positions = Positions(account, from_day, self.tickers)
+        if len(self.tickers.ticker_names) == 0:
+            self.daily = pd.DataFrame()
+            return
         self.daily = pd.DataFrame(index=self.tickers.prices.index)
         self.daily['days_from_start'] = range(1, len(self.daily) + 1)
         self.daily['daily_deposits'] = self.deposits.deposits
