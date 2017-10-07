@@ -41,17 +41,14 @@ class MarketDays():
     def _get_market_days(self, from_day):
         """Create a Series from the data on the marketdays table."""
         db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute('''
-                SELECT open, day
-                FROM marketdays
-                WHERE (%(from_day)s IS NULL OR day >= %(from_day)s) AND day < %(today)s
-                ORDER BY day;''',
-                {'from_day': from_day, 'today': date.today()})
+        days = pd.read_sql_query('''
+            SELECT day, open
+            FROM marketdays
+            WHERE (%(from_day)s IS NULL OR day >= %(from_day)s) AND day < %(today)s
+            ORDER BY day;''',
+            con=db.conn,
+            params={'from_day': from_day, 'today': date.today()},
+            index_col='day',
+            parse_dates=['day'])
 
-            if cur.rowcount > 0:
-                _records = list(zip(*cur.fetchall()))  # two sublists: the first of open values, the second of days
-            else:
-                _records = [None, None]
-
-            return pd.Series(_records[0], index=_records[1], dtype=bool)
+        return days['open']
