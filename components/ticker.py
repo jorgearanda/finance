@@ -1,7 +1,6 @@
 from datetime import date
 import pandas as pd
 
-from components.market_days import MarketDays
 from db import db
 
 
@@ -83,19 +82,7 @@ class Ticker():
         """Instantiate a Ticker object."""
         self.ticker_name = ticker_name
         self.from_day = from_day
-        _days = MarketDays(from_day).market_days
-        self.values = pd.DataFrame(_days, index=_days.index, columns=['open'])
-        self.values['price'] = self._get_prices()
-        self.values['change'] = (self.values['price'] / self.values['price'].shift(1)) - 1.0
-        first_price_index = self.values['price'].first_valid_index()
-        if first_price_index:
-            self.values['change_from_start'] = (self.values['price'] / self.values['price'][first_price_index]) - 1.0
-        else:  # there are no valid prices!
-            self.values['change_from_start'] = 0.0
-        self.values['distribution'] = self._get_distributions()
-        self.values['distributions_from_start'] = self.values['distribution'].cumsum()
-        self.values['yield_from_start'] = self.values['distributions_from_start'] / self.values['price']
-        self.values['returns'] = self.values['change_from_start'] + self.values['yield_from_start']
+        self.values = self._get_daily_values()
         self.volatility = self._get_volatility()
 
     def __repr__(self):
@@ -104,47 +91,35 @@ class Ticker():
     def __str__(self):
         return str(self.values.head())
 
-    def _get_prices(self):
-        """Create a Series with the ticker's closing prices."""
+    def _get_daily_values(self):
+        """Create a DataFrame with daily ticker data."""
         db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute('''
-                SELECT p.close::double precision AS price, m.day
-                FROM marketdays m LEFT JOIN assetprices p USING (day)
-                WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
-                AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
-                ORDER BY m.day ASC;''',
-                {'ticker_name': self.ticker_name, 'from_day': self.from_day, 'today': date.today()})
+        ticker_data = pd.read_sql_query('''
+            WITH tickerdistributions AS
+                (SELECT day, amount::double precision FROM distributions WHERE ticker = %(ticker_name)s)
+            SELECT m.day, m.open, p.close::double precision AS price, COALESCE(d.amount, 0) AS distribution
+            FROM marketdays m LEFT JOIN assetprices p USING (day)
+            LEFT JOIN tickerdistributions d USING (day)
+            WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
+            AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
+            ORDER BY m.day ASC;''',
+            con=db.conn,
+            params={'ticker_name': self.ticker_name, 'from_day': self.from_day, 'today': date.today()},
+            index_col='day',
+            parse_dates=['day'])
 
-            if cur.rowcount > 0:
-                records = list(zip(*cur.fetchall()))  # two sublists: the first of prices, the second of days
-            else:
-                records = [None, None]
+        ticker_data['price'].fillna(method='ffill', inplace=True)
+        ticker_data['change'] = (ticker_data['price'] / ticker_data['price'].shift(1)) - 1.0
+        first_price_index = ticker_data['price'].first_valid_index()
+        if first_price_index:
+            ticker_data['change_from_start'] = (ticker_data['price'] / ticker_data['price'][first_price_index]) - 1.0
+        else:  # there are no valid prices
+            ticker_data['change_from_start'] = 0.0
+        ticker_data['distributions_from_start'] = ticker_data['distribution'].cumsum()
+        ticker_data['yield_from_start'] = ticker_data['distributions_from_start'] / ticker_data['price']
+        ticker_data['returns'] = ticker_data['change_from_start'] + ticker_data['yield_from_start']
 
-        _prices = pd.Series(records[0], index=records[1], dtype=float)
-        _prices.fillna(method='ffill', inplace=True)
-
-        return _prices
-
-    def _get_distributions(self):
-        """Create a dataframe with the ticker's per-unit cash distributions."""
-        db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute('''
-                WITH tickerdistributions AS
-                    (SELECT day, amount::double precision FROM distributions WHERE ticker = %(ticker_name)s)
-                SELECT COALESCE(d.amount, 0) AS distribution, m.day
-                FROM marketdays m LEFT JOIN tickerdistributions d USING (day)
-                WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
-                ORDER BY m.day ASC;''',
-                {'ticker_name': self.ticker_name, 'from_day': self.from_day, 'today': date.today()})
-
-            if cur.rowcount > 0:
-                records = list(zip(*cur.fetchall()))  # two sublists: the first of distributions, the second of days
-            else:
-                records = [None, None]
-
-        return pd.Series(records[0], index=records[1], dtype=float)
+        return ticker_data
 
     def _get_volatility(self):
         """Calculate ticker price volatility."""
