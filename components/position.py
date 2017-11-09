@@ -1,3 +1,4 @@
+from datetime import date
 import numpy as np
 import pandas as pd
 
@@ -116,19 +117,7 @@ class Position():
         else:
             self._ticker = Ticker(ticker_name, from_day)
 
-        self.values = pd.DataFrame(index=self._ticker.values.index, columns=['current_price'])
-
-        self.values['current_price'] = self._ticker.values['price']
-        self.values['units'], self.values['cost'] = self._get_units_and_costs()
-        self.values['cost_per_unit'] = self.values['cost'] / self.values['units']
-        self.values['market_value'] = self.values['units'] * self.values['current_price']
-        self.values['open_profit'] = self.values['market_value'] - self.values['cost']
-        self.values['open_profit'] = self.values['open_profit'].astype('float')
-        self.values['appreciation_returns'] = self.values['open_profit'] / self.values['cost']
-        self.values['distributions'] = self._get_distributions()
-        self.values['distribution_returns'] = self.values['distributions'] / self.values['cost']
-        self.values['total_returns'] = \
-            self.values.fillna(0)['distribution_returns'] + self.values.fillna(0)['appreciation_returns']
+        self.values = self._get_daily_values()
 
     def __repr__(self):
         return str(self.values.head())
@@ -136,50 +125,54 @@ class Position():
     def __str__(self):
         return str(self.values.head())
 
-    def _get_units_and_costs(self):
+    def _get_daily_values(self):
+        """Create a DataFrame with daily position data."""
         db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute('''
-                SELECT SUM(units)::int AS units, SUM(total)::double precision AS total, day
+        position_data = pd.read_sql_query('''
+            WITH buys AS
+                (SELECT SUM(units)::int AS units, SUM(total)::double precision AS total, day
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND txtype = 'buy'
                     AND target = %(ticker_name)s
                 GROUP BY day
-                ORDER BY day ASC;''',
-                {'account': self.account, 'from_day': self.from_day, 'ticker_name': self.ticker_name})
-
-            if cur.rowcount > 0:
-                records = list(zip(*cur.fetchall()))  # three sublists: units, total, days
-            else:
-                records = [None, None, None]
-
-        _units = pd.Series(records[0], index=records[2], dtype=int)
-        _units = _units.reindex(self.values.index).fillna(0).cumsum()
-        _costs = pd.Series(records[1], index=records[2], dtype=float)
-        _costs = _costs.reindex(self.values.index).fillna(0).cumsum()
-        return _units, _costs
-
-    def _get_distributions(self):
-        db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute('''
-                SELECT SUM(total)::double precision AS total, day
+                ORDER BY day ASC),
+            dividends AS
+                (SELECT SUM(total)::double precision AS total, day
                 FROM transactions
                 WHERE (%(account)s IS NULL OR account = %(account)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND txtype = 'dividend'
                     AND source = %(ticker_name)s
                 GROUP BY day
-                ORDER BY day ASC;''',
-                {'account': self.account, 'from_day': self.from_day, 'ticker_name': self.ticker_name})
+                ORDER BY day ASC)
+            SELECT m.day, buys.units, buys.total AS cost, dividends.total AS distributions
+            FROM marketdays m LEFT JOIN buys USING (day)
+            LEFT JOIN dividends USING (day)
+            WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
+            ORDER BY m.day ASC;''',
+            con=db.conn,
+            params={
+                'account': self.account,
+                'ticker_name': self.ticker_name,
+                'from_day': self.from_day,
+                'today': date.today()
+            },
+            index_col='day',
+            parse_dates=['day'])
 
-            if cur.rowcount > 0:
-                records = list(zip(*cur.fetchall()))  # two sublists: total, days
-            else:
-                records = [None, None]
+        position_data['units'] = position_data['units'].fillna(0).cumsum()
+        position_data['cost'] = position_data['cost'].fillna(0).cumsum()
+        position_data['distributions'] = position_data['distributions'].fillna(0).cumsum()
+        position_data['current_price'] = self._ticker.values['price']
+        position_data['cost_per_unit'] = position_data['cost'] / position_data['units']
+        position_data['market_value'] = position_data['units'] * position_data['current_price']
+        position_data['open_profit'] = position_data['market_value'] - position_data['cost']
+        position_data['open_profit'] = position_data['open_profit'].astype('float')
+        position_data['appreciation_returns'] = position_data['open_profit'] / position_data['cost']
+        position_data['distribution_returns'] = position_data['distributions'] / position_data['cost']
+        position_data['total_returns'] = \
+            position_data['distribution_returns'].fillna(0) + position_data['appreciation_returns'].fillna(0)
 
-        _distributions = pd.Series(records[0], index=records[1], dtype=float)
-        _distributions = _distributions.reindex(self.values.index).fillna(0).cumsum()
-        return _distributions
+        return position_data
