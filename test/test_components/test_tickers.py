@@ -1,4 +1,4 @@
-from datetime import datetime as dt, date
+from datetime import datetime as dt
 from freezegun import freeze_time
 import pandas as pd
 from pytest import approx
@@ -32,12 +32,12 @@ def test_loads_with_data(simple):
 
     assert t.prices.columns[0] == 'VCN.TO'
     assert t.prices.columns[1] == 'VEE.TO'
-    assert t.prices.loc[date(2017, 3, 2)]['VCN.TO'] == approx(30.00)
-    assert t.changes.loc[date(2017, 3, 3)]['VCN.TO'] == approx(30.10 / 30.00 - 1)
-    assert t.changes_from_start.loc[date(2017, 3, 6)]['VCN.TO'] == approx(29.85 / 30.00 - 1)
-    assert t.yields_from_start.loc[date(2017, 3, 6)]['VCN.TO'] == approx(0.0067001675041876048)
+    assert t.prices.loc['2017-03-02']['VCN.TO'] == approx(30.00)
+    assert t.changes.loc['2017-03-03']['VCN.TO'] == approx(30.10 / 30.00 - 1)
+    assert t.changes_from_start.loc['2017-03-06']['VCN.TO'] == approx(29.85 / 30.00 - 1)
+    assert t.yields_from_start.loc['2017-03-06']['VCN.TO'] == approx(0.0067001675041876048)
     assert t.volatilities['VEE.TO'] == t.tickers['VEE.TO'].volatility
     assert t.correlations['VCN.TO']['VCN.TO'] == approx(1.00)
     assert t.correlations['VCN.TO']['VEE.TO'] == approx(-0.988212)
 
-    assert t.price(date(2017, 3, 2), 'VCN.TO') == approx(30.00)
+    assert t.price('2017-03-02', 'VCN.TO') == approx(30.00)

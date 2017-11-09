@@ -29,54 +29,52 @@ def test_values(simple):
     with freeze_time(dt(2017, 3, 7)):
         vcn = Ticker('VCN.TO')
 
-    assert vcn.price(date(2017, 3, 1)) is None
-    assert vcn.price(date(2017, 3, 2)) == approx(30.00)
-    assert vcn.price(date(2017, 3, 3)) == approx(30.10)
-    assert vcn.price(date(2017, 3, 4)) == approx(30.10)
-    assert vcn.price(date(2017, 3, 5)) == approx(30.10)
-    assert vcn.price(date(2017, 3, 6)) == approx(29.85)
-    assert vcn.price(date(2017, 3, 7)) is None
+    assert vcn.price('2017-03-01') is None
+    assert vcn.price('2017-03-02') == approx(30.00)
+    assert vcn.price('2017-03-03') == approx(30.10)
+    assert vcn.price('2017-03-04') == approx(30.10)
+    assert vcn.price('2017-03-05') == approx(30.10)
+    assert vcn.price('2017-03-06') == approx(29.85)
+    assert vcn.price('2017-03-07') is None
 
-    assert vcn.change(date(2017, 3, 1)) is None
-    assert pd.isnull(vcn.change(date(2017, 3, 2)))  # Because the previous price is None
-    assert float(vcn.change(date(2017, 3, 3))) == approx(30.10 / 30.00 - 1)
-    assert vcn.change(date(2017, 3, 4)) == 0
-    assert vcn.change(date(2017, 3, 5)) == 0
-    assert float(vcn.change(date(2017, 3, 6))) == approx(29.85 / 30.10 - 1)
+    assert vcn.change('2017-03-01') is None
+    assert pd.isnull(vcn.change('2017-03-02'))  # Because the previous price is None
+    assert vcn.change('2017-03-03') == approx(30.10 / 30.00 - 1)
+    assert vcn.change('2017-03-04') == 0
+    assert vcn.change('2017-03-05') == 0
+    assert vcn.change('2017-03-06') == approx(29.85 / 30.10 - 1)
 
-    assert vcn.change_from_start(date(2017, 3, 1)) is None
-    assert vcn.change_from_start(date(2017, 3, 2)) == approx(0)
-    assert vcn.change_from_start(date(2017, 3, 3)) == approx(30.10 / 30.00 - 1)
-    assert vcn.change_from_start(date(2017, 3, 4)) == approx(30.10 / 30.00 - 1)
-    assert vcn.change_from_start(date(2017, 3, 5)) == approx(30.10 / 30.00 - 1)
-    assert vcn.change_from_start(date(2017, 3, 6)) == approx(29.85 / 30.00 - 1)
+    assert vcn.change_from_start('2017-03-01') is None
+    assert vcn.change_from_start('2017-03-02') == approx(0)
+    assert vcn.change_from_start('2017-03-03') == approx(30.10 / 30.00 - 1)
+    assert vcn.change_from_start('2017-03-04') == approx(30.10 / 30.00 - 1)
+    assert vcn.change_from_start('2017-03-05') == approx(30.10 / 30.00 - 1)
+    assert vcn.change_from_start('2017-03-06') == approx(29.85 / 30.00 - 1)
 
-    assert vcn.distribution(date(2017, 3, 1)) is None
-    assert vcn.distribution(date(2017, 3, 2)) == approx(0)
-    assert vcn.distribution(date(2017, 3, 3)) == approx(0.1010)
-    assert vcn.distribution(date(2017, 3, 4)) == approx(0)
-    assert vcn.distribution(date(2017, 3, 5)) == approx(0)
-    assert vcn.distribution(date(2017, 3, 6)) == approx(0.0990)
+    assert vcn.distribution('2017-03-01') is None
+    assert vcn.distribution('2017-03-02') == approx(0)
+    assert vcn.distribution('2017-03-03') == approx(0.1010)
+    assert vcn.distribution('2017-03-04') == approx(0)
+    assert vcn.distribution('2017-03-05') == approx(0)
+    assert vcn.distribution('2017-03-06') == approx(0.0990)
 
-    assert vcn.distributions_from_start(date(2017, 3, 1)) is None
-    assert vcn.distributions_from_start(date(2017, 3, 2)) == approx(0)
-    assert vcn.distributions_from_start(date(2017, 3, 3)) == approx(0.1010)
-    assert vcn.distributions_from_start(date(2017, 3, 4)) == approx(0.1010)
-    assert vcn.distributions_from_start(date(2017, 3, 5)) == approx(0.1010)
-    assert vcn.distributions_from_start(date(2017, 3, 6)) == approx(0.2)
+    assert vcn.distributions_from_start('2017-03-01') is None
+    assert vcn.distributions_from_start('2017-03-02') == approx(0)
+    assert vcn.distributions_from_start('2017-03-03') == approx(0.1010)
+    assert vcn.distributions_from_start('2017-03-04') == approx(0.1010)
+    assert vcn.distributions_from_start('2017-03-05') == approx(0.1010)
+    assert vcn.distributions_from_start('2017-03-06') == approx(0.2)
 
-    assert vcn.yield_from_start(date(2017, 3, 1)) is None
-    assert vcn.yield_from_start(date(2017, 3, 2)) == approx(0)
-    assert vcn.yield_from_start(date(2017, 3, 3)) == approx(0.1010 / 30.10)
-    assert vcn.yield_from_start(date(2017, 3, 4)) == approx(0.1010 / 30.10)
-    assert vcn.yield_from_start(date(2017, 3, 5)) == approx(0.1010 / 30.10)
-    assert vcn.yield_from_start(date(2017, 3, 6)) == approx(0.2 / 29.85)
+    assert vcn.yield_from_start('2017-03-01') is None
+    assert vcn.yield_from_start('2017-03-02') == approx(0)
+    assert vcn.yield_from_start('2017-03-03') == approx(0.1010 / 30.10)
+    assert vcn.yield_from_start('2017-03-04') == approx(0.1010 / 30.10)
+    assert vcn.yield_from_start('2017-03-05') == approx(0.1010 / 30.10)
+    assert vcn.yield_from_start('2017-03-06') == approx(0.2 / 29.85)
 
-    assert vcn.returns(date(2017, 3, 1)) is None
-    assert vcn.returns(date(2017, 3, 2)) == approx(0)
-    assert vcn.returns(date(2017, 3, 3)) == \
-        approx(vcn.change_from_start(date(2017, 3, 3)) + vcn.yield_from_start(date(2017, 3, 3)))
-    assert vcn.returns(date(2017, 3, 6)) == \
-        approx(vcn.change_from_start(date(2017, 3, 6)) + vcn.yield_from_start(date(2017, 3, 6)))
+    assert vcn.returns('2017-03-01') is None
+    assert vcn.returns('2017-03-02') == approx(0)
+    assert vcn.returns('2017-03-03') == approx(vcn.change_from_start('2017-03-03') + vcn.yield_from_start('2017-03-03'))
+    assert vcn.returns('2017-03-06') == approx(vcn.change_from_start('2017-03-06') + vcn.yield_from_start('2017-03-06'))
 
     assert vcn.volatility == approx(vcn.values[(vcn.values.open)]['change'].std(axis=0))

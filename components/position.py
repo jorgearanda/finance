@@ -169,7 +169,6 @@ class Position():
         position_data['cost_per_unit'] = position_data['cost'] / position_data['units']
         position_data['market_value'] = position_data['units'] * position_data['current_price']
         position_data['open_profit'] = position_data['market_value'] - position_data['cost']
-        position_data['open_profit'] = position_data['open_profit'].astype('float')
         position_data['appreciation_returns'] = position_data['open_profit'] / position_data['cost']
         position_data['distribution_returns'] = position_data['distributions'] / position_data['cost']
         position_data['total_returns'] = \

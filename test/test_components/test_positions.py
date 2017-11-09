@@ -1,4 +1,4 @@
-from datetime import datetime as dt, date
+from datetime import datetime as dt
 from freezegun import freeze_time
 import pandas as pd
 from pytest import approx
@@ -32,14 +32,14 @@ def test_loads_with_data(simple):
 
     assert p.units.columns[0] == 'VCN.TO'
     assert p.units.columns[1] == 'VEE.TO'
-    assert p.units.loc[date(2017, 3, 2)]['VCN.TO'] == approx(0)
-    assert p.units.loc[date(2017, 3, 3)]['VCN.TO'] == approx(100)
-    assert p.costs.loc[date(2017, 3, 3)]['VCN.TO'] == approx(3010.35)
-    assert p.costs_per_unit.loc[date(2017, 3, 3)]['VCN.TO'] == approx(30.1035)
-    assert p.current_prices.loc[date(2017, 3, 3)]['VCN.TO'] == approx(30.10)
-    assert p.market_values.loc[date(2017, 3, 3)]['VCN.TO'] == approx(3010)
-    assert p.open_profits.loc[date(2017, 3, 3)]['VCN.TO'] == approx(-0.35)
-    assert p.distributions.loc[date(2017, 3, 3)]['VCN.TO'] == approx(10.1)
-    assert p.distribution_returns.loc[date(2017, 3, 3)]['VCN.TO'] == approx(10.1 / 3010.35)
-    assert p.appreciation_returns.loc[date(2017, 3, 3)]['VCN.TO'] == approx((3010.0 - 3010.35) / 3010.35)
-    assert p.total_returns.loc[date(2017, 3, 3)]['VCN.TO'] == approx((3010.0 + 10.1 - 3010.35) / 3010.35)
+    assert p.units.loc['2017-03-02']['VCN.TO'] == approx(0)
+    assert p.units.loc['2017-03-03']['VCN.TO'] == approx(100)
+    assert p.costs.loc['2017-03-03']['VCN.TO'] == approx(3010.35)
+    assert p.costs_per_unit.loc['2017-03-03']['VCN.TO'] == approx(30.1035)
+    assert p.current_prices.loc['2017-03-03']['VCN.TO'] == approx(30.10)
+    assert p.market_values.loc['2017-03-03']['VCN.TO'] == approx(3010)
+    assert p.open_profits.loc['2017-03-03']['VCN.TO'] == approx(-0.35)
+    assert p.distributions.loc['2017-03-03']['VCN.TO'] == approx(10.1)
+    assert p.distribution_returns.loc['2017-03-03']['VCN.TO'] == approx(10.1 / 3010.35)
+    assert p.appreciation_returns.loc['2017-03-03']['VCN.TO'] == approx((3010.0 - 3010.35) / 3010.35)
+    assert p.total_returns.loc['2017-03-03']['VCN.TO'] == approx((3010.0 + 10.1 - 3010.35) / 3010.35)
