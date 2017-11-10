@@ -24,6 +24,7 @@ class Tickers():
     volatilities -- Dict of ticker volatilities (standard deviation of price changes)
     correlations -- DataFrame indexed by ticker name with one column per ticker. Values represent the correlation
         between both tickers' prices
+    market_open -- Series, day-indexed, with a boolean representing market openings
     """
 
     def price(self, day, ticker_name):
@@ -44,6 +45,7 @@ class Tickers():
             self.returns = self._collect_feature('returns')
             self.volatilities = self._collect_volatilities()
             self.correlations = self._calc_correlations()
+            self.market_open = self._collect_market_open()
 
     def __repr__(self):
         return str(self.tickers)
@@ -81,3 +83,7 @@ class Tickers():
     def _calc_correlations(self):
         """Calculate the correlations between ticker prices."""
         return self.prices.corr()
+
+    def _collect_market_open(self):
+        """Extract the Series of open market days from a Ticker object."""
+        return self.tickers[self.ticker_names[0]].values['open']

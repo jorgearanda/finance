@@ -11,7 +11,7 @@ class Portfolio():
     """Hold performance information for an investment account or portfolio.
 
     Public methods:
-    --none yet--
+    latest() -- Return the latest metrics for this portfolio
 
     Instance variables:
     account -- str, the account for this portfolio. If None, the portfolio represents all accounts in the database
@@ -21,6 +21,7 @@ class Portfolio():
     positions -- Positions object, with performance data for all positions in the portfolio
     daily -- DataFrame indexed by day, with the following Series:
         - `days_from_start` int, days from the date the account was opened
+        - `market_open` bool, whether the market was open on this date
         - `daily_deposits` float, deposits made on this date
         - `capital` float, sum of deposits made to this date
         - `avg_capital` float, average capital held over the lifetime of the portfolio
@@ -41,12 +42,12 @@ class Portfolio():
         - `10k_equivalent` float, value of a hypothetical 10k dollars invested with this strategy from the start
         - `last_peak_twrr` float, time-weighted returns at the highest point in the lifetime of the portfolio to date
         - `current_drawdown` float, percentage drop in returns from the last peak
-        - `current_drawdown_start` date, date when the current drawdown began
         - `greatest_drawdown` float, greatest percentage drop in returns in the lifetime of the portfolio
-        - `greatest_drawdown_start` date, day when the greatest drawdown began
-        - `greatest_drawdown_end` date, day when the greatest drawdown ended
         - `sharpe` float, Sharpe ratio of the portfolio as a whole
     """
+
+    def latest(self):
+        return self.daily.ix[-1]
 
     def __init__(self, account=None, from_day=None):
         """Instantiate a Portfolio object."""
@@ -60,6 +61,7 @@ class Portfolio():
             return
         self.daily = pd.DataFrame(index=self.tickers.prices.index)
         self.daily['days_from_start'] = range(1, len(self.daily) + 1)
+        self.daily['market_open'] = self.tickers.market_open
         self.daily['daily_deposits'] = self.deposits.deposits
         self.daily['daily_deposits'].fillna(0.00, inplace=True)
         self.daily['capital'] = self.daily['daily_deposits'].cumsum()
@@ -77,8 +79,9 @@ class Portfolio():
         self.daily['twrr_annualized'] = (1.0 + self.daily['twrr']) ** (365.0 / (self.daily['days_from_start'])) - 1
         self.daily['mwrr'] = self.daily['profit'] / self.daily['avg_capital']
         self.daily['mwrr_annualized'] = (1.0 + self.daily['mwrr']) ** (365.0 / (self.daily['days_from_start'])) - 1
-        self.daily['volatility'] = self.daily['daily_returns'].expanding().std()
+        self.daily['volatility'] = self.daily[(self.daily['market_open'])]['daily_returns'].expanding().std()
         self.daily['10k_equivalent'] = 10000 * (self.daily['twrr'] + 1)
         self.daily['last_peak_twrr'] = self.daily['twrr'].expanding().max()
-        # self.daily['current_drawdown'] = (1 + self.daily['twrr'] - self.daily['last_peak_twrr']) / (1 + self.daily['last_peak_twrr']) - 1
-        # self.daily['greatest_drawdown'] = self.daily['current_drawdown'].expanding().max()
+        self.daily['last_peak'] = self.daily['last_peak_twrr'].groupby(self.daily['last_peak_twrr']).transform('idxmax').astype('datetime64[ns]')
+        self.daily['current_drawdown'] = (self.daily['twrr'] - self.daily['last_peak_twrr']) / (1 + self.daily['last_peak_twrr'])
+        self.daily['greatest_drawdown'] = self.daily['current_drawdown'].expanding().min()
