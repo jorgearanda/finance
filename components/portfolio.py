@@ -67,9 +67,18 @@ class Portfolio():
         self.daily['dividends'] = self.positions.distributions.sum(axis=1)
         self.daily['cash'] = self.daily['capital'] + self.daily['dividends'] - self.positions.costs.sum(axis=1)
         self.daily['market_value'] = self.daily['cash'] + self.positions.market_values.sum(axis=1)
-        self.daily['daily_profit'] = self.daily['market_value'] - self.daily['market_value'].shift(1)
+        self.daily['daily_profit'] = self.daily['market_value'] - self.daily['market_value'].shift(1) - self.daily['daily_deposits']
         self.daily['daily_returns'] = self.daily['daily_profit'] / self.daily['market_value'].shift(1)
         self.daily['profit'] = self.daily['market_value'] - self.daily['capital']
         self.daily['distribution_returns'] = self.daily['dividends'] / self.daily['capital']
-        self.daily['appreciation_returns'] = self.positions.market_values.sum(axis=1) / self.positions.costs.sum(axis=1) - 1.0
-        self.daily['total_returns'] = self.daily['market_value'] / self.daily['capital'] - 1.0
+        self.daily['appreciation_returns'] = self.positions.market_values.sum(axis=1) / self.positions.costs.sum(axis=1) - 1
+        self.daily['total_returns'] = self.daily['profit'] / self.daily['capital']
+        self.daily['twrr'] = ((self.daily['daily_returns'] + 1).cumprod() - 1).fillna(0.00)
+        self.daily['twrr_annualized'] = (1.0 + self.daily['twrr']) ** (365.0 / (self.daily['days_from_start'])) - 1
+        self.daily['mwrr'] = self.daily['profit'] / self.daily['avg_capital']
+        self.daily['mwrr_annualized'] = (1.0 + self.daily['mwrr']) ** (365.0 / (self.daily['days_from_start'])) - 1
+        self.daily['volatility'] = self.daily['daily_returns'].expanding().std()
+        self.daily['10k_equivalent'] = 10000 * (self.daily['twrr'] + 1)
+        self.daily['last_peak_twrr'] = self.daily['twrr'].expanding().max()
+        # self.daily['current_drawdown'] = (1 + self.daily['twrr'] - self.daily['last_peak_twrr']) / (1 + self.daily['last_peak_twrr']) - 1
+        # self.daily['greatest_drawdown'] = self.daily['current_drawdown'].expanding().max()
