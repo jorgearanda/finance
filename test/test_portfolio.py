@@ -4,7 +4,7 @@ import math
 from pandas import Timestamp
 from pytest import approx
 
-from components.portfolio import Portfolio
+from portfolio import Portfolio
 from db import db
 from test.fixtures import simple
 
