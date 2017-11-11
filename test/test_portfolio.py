@@ -125,6 +125,9 @@ def test_portfolio_class_calculations(simple):
     assert math.isnan(p.by_day.ix['2017-03-02']['sharpe'])
     assert p.by_day.ix['2017-03-06']['sharpe'] == approx(1.7869651525257371)
 
+    assert p.by_day.ix['2017-03-02']['cash_allocation'] == 1
+    assert p.by_day.ix['2017-03-06']['cash_allocation'] == approx(0.40496233512598256)
+
 
 def test_latest(simple):
     with freeze_time(dt(2017, 3, 7)):
