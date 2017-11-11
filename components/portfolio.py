@@ -38,7 +38,7 @@ class Portfolio():
         - `profit` float, difference between the market value on this date and the capital provided
         - `appreciation_returns` float, percentage returns obtained by unrealized market value appreciations
         - `distribution_returns` float, percentage returns obtained by dividends
-        - `total_returns` float, percentage returns, both by dividends and appreciation
+        - `returns` float, percentage returns, both by dividends and appreciation
         - `twrr` float, time-weighted real returns
         - `twrr_annualized` float, annualized time-weighted real returns
         - `mwrr` float, money-weighted real returns
@@ -78,12 +78,12 @@ class Portfolio():
         df['dividends'] = self.positions.distributions.sum(axis=1)
         df['cash'] = df['capital'] + df['dividends'] - df['positions_cost']
         df['total_value'] = df['cash'] + df['positions_value']
-        df['day_profit'] = df['total_value'] - df['total_value'].shift(1) - df['day_deposits']
-        df['day_returns'] = df['day_profit'] / df['total_value'].shift(1)
+        df['day_profit'] = (df['total_value'] - df['total_value'].shift(1) - df['day_deposits']).fillna(0.00)
+        df['day_returns'] = (df['day_profit'] / df['total_value'].shift(1)).fillna(0.00)
         df['profit'] = df['total_value'] - df['capital']
-        df['appreciation_returns'] = df['positions_value'] / df['positions_cost'] - 1
+        df['appreciation_returns'] = df['appreciation'] / df['capital']
         df['distribution_returns'] = df['dividends'] / df['capital']
-        df['total_returns'] = df['profit'] / df['capital']
+        df['returns'] = df['profit'] / df['capital']
         df['twrr'] = ((df['day_returns'] + 1).cumprod() - 1).fillna(0.00)
         df['twrr_annualized'] = (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1
         df['mwrr'] = df['profit'] / df['avg_capital']

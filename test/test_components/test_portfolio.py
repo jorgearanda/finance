@@ -71,3 +71,21 @@ def test_portfolio_class_calculations(simple):
 
     assert p.by_day.ix['2017-03-02']['total_value'] == 10000
     assert p.by_day.ix['2017-03-06']['total_value'] == approx(10000 + 6185 - 5810.70 + 20)
+
+    assert p.by_day.ix['2017-03-02']['day_profit'] == 0
+    assert p.by_day.ix['2017-03-06']['day_profit'] == approx(384.90)
+
+    assert p.by_day.ix['2017-03-02']['day_returns'] == 0
+    assert p.by_day.ix['2017-03-06']['day_returns'] == approx(0.038453853)
+
+    assert p.by_day.ix['2017-03-02']['profit'] == 0
+    assert p.by_day.ix['2017-03-06']['profit'] == approx(6185 - 5810.70 + 20)
+
+    assert p.by_day.ix['2017-03-02']['appreciation_returns'] == 0
+    assert p.by_day.ix['2017-03-06']['appreciation_returns'] == approx((6185 - 5810.70) / 10000)
+
+    assert p.by_day.ix['2017-03-02']['distribution_returns'] == 0
+    assert p.by_day.ix['2017-03-06']['distribution_returns'] == approx(20 / 10000)
+
+    assert p.by_day.ix['2017-03-02']['returns'] == 0
+    assert p.by_day.ix['2017-03-06']['returns'] == approx((6185 - 5810.70 + 20) / 10000)
