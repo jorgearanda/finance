@@ -20,9 +20,9 @@ class Portfolio():
     deposits -- Deposits object, with all deposits relevant to the portfolio
     tickers -- Tickers object, with all tickers relevant to the portfolio
     positions -- Positions object, with performance data for all positions in the portfolio
-    daily -- DataFrame indexed by day, with the following Series:
+    by_day -- DataFrame indexed by day, with the following Series:
         - `days_from_start` int, days from the date the account was opened
-        - `days_from_start` float, years from the date the account was opened
+        - `years_from_start` float, years from the date the account was opened
         - `market_day` bool, whether the market was open on this date
         - `day_deposits` float, deposits made on this date
         - `capital` float, sum of deposits made to this date
@@ -52,7 +52,7 @@ class Portfolio():
     """
 
     def latest(self):
-        return self.daily.ix[-1]
+        return self.by_day.ix[-1]
 
     def __init__(self, account=None, from_day=None):
         """Instantiate a Portfolio object."""
@@ -62,7 +62,7 @@ class Portfolio():
         self.tickers = Tickers(from_day)
         self.positions = Positions(account, from_day, self.tickers)
         if len(self.tickers.ticker_names) == 0:
-            self.daily = pd.DataFrame()
+            self.by_day = pd.DataFrame()
             return
         df = pd.DataFrame(index=self.tickers.prices.index)
         df['days_from_start'] = range(1, len(df) + 1)
@@ -96,4 +96,4 @@ class Portfolio():
         df['current_drawdown'] = (df['twrr'] - df['last_peak_twrr']) / (1 + df['last_peak_twrr'])
         df['greatest_drawdown'] = df['current_drawdown'].expanding().min()
         df['sharpe'] = (df['twrr'] - config.sharpe * df['years_from_start']) / df['volatility']
-        self.daily = df
+        self.by_day = df
