@@ -283,7 +283,7 @@ class Portfolio():
                 data['greatestDrawdownEnd'] = prev['greatestDrawdownEnd']
 
             if data['volatility'] > 0:
-                data['sharpe'] = (data['ttwr'] - Decimal(days_from_start / 365) * config.sharpe) / data['volatility']
+                data['sharpe'] = (data['ttwr'] - Decimal(days_from_start / 365) * Decimal(config.sharpe)) / data['volatility']
             else:
                 data['sharpe'] = Decimal(0)
 

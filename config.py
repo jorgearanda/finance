@@ -1,6 +1,3 @@
-from decimal import Decimal
-
-
 db = {
     'dev': {
         'db': 'finance',
@@ -11,4 +8,4 @@ db = {
         'user': 'jorge'
     }
 }
-sharpe = Decimal(0.017)
+sharpe = 0.017
