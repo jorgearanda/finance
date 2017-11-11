@@ -1,5 +1,7 @@
 from datetime import datetime as dt, date
 from freezegun import freeze_time
+import math
+from pandas import Timestamp
 from pytest import approx
 
 from components.portfolio import Portfolio
@@ -89,3 +91,45 @@ def test_portfolio_class_calculations(simple):
 
     assert p.by_day.ix['2017-03-02']['returns'] == 0
     assert p.by_day.ix['2017-03-06']['returns'] == approx((6185 - 5810.70 + 20) / 10000)
+
+    assert p.by_day.ix['2017-03-02']['twrr'] == 0
+    assert p.by_day.ix['2017-03-06']['twrr'] == approx((6185 - 5810.70 + 20) / 10000)
+
+    assert p.by_day.ix['2017-03-02']['twrr_annualized'] == 0
+    assert p.by_day.ix['2017-03-06']['twrr_annualized'] == approx(15.828796)
+
+    assert p.by_day.ix['2017-03-02']['mwrr'] == 0
+    assert p.by_day.ix['2017-03-06']['mwrr'] == approx((6185 - 5810.70 + 20) / 10000)
+
+    assert p.by_day.ix['2017-03-02']['mwrr_annualized'] == 0
+    assert p.by_day.ix['2017-03-06']['mwrr_annualized'] == approx(15.828796)
+
+    assert math.isnan(p.by_day.ix['2017-03-02']['volatility'])
+    assert p.by_day.ix['2017-03-06']['volatility'] == approx(0.0219350238)
+
+    assert p.by_day.ix['2017-03-02']['10k_equivalent'] == 10000
+    assert p.by_day.ix['2017-03-06']['10k_equivalent'] == approx(10000 + 6185 - 5810.70 + 20)
+
+    assert p.by_day.ix['2017-03-02']['last_peak_twrr'] == 0
+    assert p.by_day.ix['2017-03-06']['last_peak_twrr'] == approx((6185 - 5810.70 + 20) / 10000)
+
+    assert p.by_day.ix['2017-03-02']['last_peak'] == Timestamp('2017-03-02 00:00:00')
+    assert p.by_day.ix['2017-03-06']['last_peak'] == Timestamp('2017-03-06 00:00:00')
+
+    assert p.by_day.ix['2017-03-02']['current_drawdown'] == 0
+    assert p.by_day.ix['2017-03-06']['current_drawdown'] == 0
+
+    assert p.by_day.ix['2017-03-02']['greatest_drawdown'] == 0
+    assert p.by_day.ix['2017-03-06']['greatest_drawdown'] == 0
+
+    assert math.isnan(p.by_day.ix['2017-03-02']['sharpe'])
+    assert p.by_day.ix['2017-03-06']['sharpe'] == approx(1.7869651525257371)
+
+
+def test_latest(simple):
+    with freeze_time(dt(2017, 3, 7)):
+        p = Portfolio()
+        latest = p.latest()
+
+    assert latest['days_from_start'] == 5
+    assert latest['total_value'] == approx(10000 + 6185 - 5810.70 + 20)
