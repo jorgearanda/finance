@@ -1,4 +1,3 @@
-from datetime import date
 import pandas as pd
 
 from components.position import Position
@@ -37,7 +36,6 @@ class Positions():
         self.weights['Cash'] = 1 - self.weights.sum(axis=1)
 
     def __init__(self, account=None, from_day=None, tickers=None):
-        """Instantiate a Positions object, with dates starting on from_day."""
         self.account = account
         if not tickers:
             tickers = Tickers(from_day)
