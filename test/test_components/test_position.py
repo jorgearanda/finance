@@ -35,6 +35,7 @@ def test_position_class_instantiates_with_data(simple):
 def test_values(simple):
     with freeze_time(dt(2017, 3, 7)):
         vcn = Position('VCN.TO')
+        vcn.calc_weight(vcn.values['market_value'])
 
     assert vcn.units('2017-03-01') is None
     assert vcn.units('2017-03-02') == 0
@@ -95,3 +96,7 @@ def test_values(simple):
     assert approx(vcn.total_returns('2017-03-03'), (3010.0 + 10.1 - 3010.35) / 3010.35)
     assert approx(vcn.total_returns('2017-03-06'), (2985.0 + 20.0 - 3010.35) / 3010.35)
     assert vcn.total_returns('2017-03-07') is None
+
+    assert vcn.weight('2017-03-01') is None
+    assert vcn.weight('2017-03-02') == 0
+    assert vcn.weight('2017-03-06') == 1

@@ -10,7 +10,7 @@ class Positions():
     """DataFrame-based structure that wraps several Position objects
 
     Public methods:
-    --none yet--
+    calc_weights -- Trigger weight calculations for all positions in this object
 
     Instance variables:
     account -- Name of the account for these positions. All accounts, if None
@@ -26,7 +26,15 @@ class Positions():
     distribution_returns -- DataFrame, day-indexed, one position per column. Cumulative distributions over position cost
     appreciation_returns -- DataFrame, day-indexed, one position per column. Appreciation returns over position cost
     total_returns -- DataFrame, day-indexed, one position per column. Appreciation and distribution returns
+    weight -- DataFrame, day-indexed, one position per column, plus cash. Weight of the position
     """
+
+    def calc_weights(self, total_values):
+        """Trigger weight calculations for all positions held in this object."""
+        for _, position in self.positions.items():
+            position.calc_weight(total_values)
+        self.weights = self._collect_feature('weight')
+        self.weights['Cash'] = 1 - self.weights.sum(axis=1)
 
     def __init__(self, account=None, from_day=None, tickers=None):
         """Instantiate a Positions object, with dates starting on from_day."""

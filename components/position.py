@@ -20,6 +20,7 @@ class Position():
     distribution_returns(date) -- Return the accumulated distributions over the cost of the position to this day
     appreciation_returns(date) -- Return the unrealized appreciation profits over the cost of the position to this day
     total_returns(date) -- Return the total returns (distribution and appreciation) of the position to this day
+    weight(date) -- Return the weight of this position on the whole portfolio, as a percentage
 
     Instance variables:
     account -- Name of the account for this position. All accounts, if None
@@ -35,7 +36,12 @@ class Position():
         - a `distribution_returns` float column representing distributions / cost
         - an `appreciation_returns` float column representing open_profit / cost
         - a `total_returns` float column representing distribution_returns + appreciation_returns
+        - a `weight` float column with a percentage of the weight of this position on the whole portfolio
     """
+
+    def calc_weight(self, total_values):
+        """Calculate the weight of this position as a part of the whole portfolio. `total` is a Series."""
+        self.values['weight'] = (self.values['market_value'] / total_values).fillna(0.00)
 
     def units(self, day):
         """Return the number of units held in this position for this day."""
@@ -104,6 +110,13 @@ class Position():
         """Return the total returns (distribution and appreciation) of the position to this day."""
         try:
             return self.values['total_returns'][day]
+        except KeyError:
+            return None
+
+    def weight(self, day):
+        """Return the weight of this position as a percentage of the total value of the portfolio on this day."""
+        try:
+            return self.values['weight'][day]
         except KeyError:
             return None
 

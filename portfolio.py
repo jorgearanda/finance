@@ -13,6 +13,7 @@ class Portfolio():
 
     Public methods:
     latest() -- Return the latest metrics for this portfolio
+    allocations() -- Return the latest asset allocations for this portfolio
 
     Instance variables:
     account -- str, the account for this portfolio. If None, the portfolio represents all accounts in the database
@@ -49,11 +50,13 @@ class Portfolio():
         - `current_drawdown` float, percentage drop in returns from the last peak
         - `greatest_drawdown` float, greatest percentage drop in returns in the lifetime of the portfolio
         - `sharpe` float, Sharpe ratio of the portfolio as a whole
-        - `cash_allocation` float, percentage of cash in the whole portfolio
     """
 
     def latest(self):
         return self.by_day.ix[-1]
+
+    def allocations(self):
+        return self.positions.weights.ix[-1]
 
     def __init__(self, account=None, from_day=None):
         """Instantiate a Portfolio object."""
@@ -97,5 +100,5 @@ class Portfolio():
         df['current_drawdown'] = (df['twrr'] - df['last_peak_twrr']) / (1 + df['last_peak_twrr'])
         df['greatest_drawdown'] = df['current_drawdown'].expanding().min()
         df['sharpe'] = (df['twrr'] - config.sharpe * df['years_from_start']) / df['volatility']
-        df['cash_allocation'] = df['cash'] / df['total_value']
         self.by_day = df
+        self.positions.calc_weights(df['total_value'])
