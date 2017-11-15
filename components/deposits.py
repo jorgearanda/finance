@@ -35,22 +35,19 @@ class Deposits():
 
     def _get_deposits(self, account, from_day):
         db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute('''
-                SELECT SUM(total)::double precision AS amount, day
-                FROM transactions
-                WHERE (%(account)s IS NULL OR account = %(account)s)
-                    AND (%(from_day)s IS NULL OR day >= %(from_day)s)
-                    AND day < %(today)s
-                    AND txtype = 'deposit'
-                GROUP BY day
-                ORDER BY day ASC;''',
-                {'account': account, 'from_day': from_day, 'today': date.today()})
-
-            _deposits = pd.DataFrame(cur.fetchall())
-            if not _deposits.empty:
-                _deposits = _deposits.set_index('day')
-                _deposits = _deposits.astype('float')
+        _deposits = pd.read_sql_query('''
+            SELECT SUM(total)::double precision AS amount, day
+            FROM transactions
+            WHERE (%(account)s IS NULL OR account = %(account)s)
+                AND (%(from_day)s IS NULL OR day >= %(from_day)s)
+                AND day < %(today)s
+                AND txtype = 'deposit'
+            GROUP BY day
+            ORDER BY day ASC;''',
+            con=db.conn,
+            params={'account': account, 'from_day': from_day, 'today': date.today()},
+            index_col='day',
+            parse_dates=['day'])
 
         return _deposits
 
