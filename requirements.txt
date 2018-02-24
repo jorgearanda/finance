@@ -3,9 +3,13 @@ coverage
 docopt
 freezegun
 html5lib
+ipykernel
+Jinja2
+matplotlib
 nose
 numpy
 pandas
 psycopg2
 pytest-cov
 scipy
+seaborn
