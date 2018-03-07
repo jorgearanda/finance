@@ -9,7 +9,8 @@ matplotlib
 nose
 numpy
 pandas
-psycopg2
+psycopg2-binary
 pytest-cov
+requests
 scipy
 seaborn
