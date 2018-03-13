@@ -22,8 +22,6 @@ Options:
     -e <env> --env <env>    Environment to load prices into [default: dev]
 '''
 
-conn = None
-
 
 def get_tickers():
     """Get all the tickers to poll from the database."""
@@ -37,12 +35,13 @@ def get_tickers():
 
 
 def get_cookie_and_crumb(symbol):
-    """Get the cookie and crumb requested by Yahoo. The crumb is a bit tricky."""
+    """Get cookie and crumb for further calls. The crumb is a bit tricky."""
     print('* Getting a cookie')
     url = f'https://finance.yahoo.com/quote/{symbol}/history?p={symbol}'
-    r = requests.get(url)
+    r = requests.get(url, timeout=3.0)
     cookie = {'B': r.cookies['B']}
-    match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', r.content.decode('utf-8'))
+    content = r.content.decode('utf-8')
+    match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
     crumb = match.group(1)
     time.sleep(0.5)  # Let Yahoo servers keep track of the cookie
 
@@ -54,14 +53,15 @@ def get_quote(symbol, crumb, cookie):
     print(f'* Getting quotes for {symbol}')
     ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
     ts_to = calendar.timegm(date.today().timetuple())
-    link = f'https://query1.finance.yahoo.com/v7/finance/download/{symbol}?' + \
-        f'period1={ts_from}&period2={ts_to}&interval=1d&events=historical&crumb={crumb}'
+    url = f'https://query1.finance.yahoo.com/v7/finance/download/{symbol}?' + \
+        f'period1={ts_from}&period2={ts_to}&' + \
+        f'interval=1d&events=historical&crumb={crumb}'
     res = None
     tries = 0
 
     while res is None and tries < 5:
         try:
-            res = requests.get(link, cookies=cookie)
+            res = requests.get(url, cookies=cookie, timeout=3.0)
         except:
             print('Error while fetching quotes. Will sleep, then try again.')
             tries += 1
@@ -85,8 +85,7 @@ def update_prices_for_ticker(symbol, lines):
             cur.execute('''
                 INSERT INTO assetprices (ticker, day, ask, bid, close)
                 VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s)
-                ON CONFLICT DO NOTHING;''',
-                {
+                ON CONFLICT DO NOTHING;''', {
                     'ticker': symbol,
                     'day': day,
                     'close': values[4]
@@ -112,5 +111,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    args = docopt(usage, argv=None, help=True, version=None, options_first=False)
+    args = docopt(usage, argv=None, help=True)
     main(args)
