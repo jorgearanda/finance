@@ -8,6 +8,7 @@ import requests
 import time
 
 import config
+from db import db
 
 
 usage = '''
@@ -24,19 +25,9 @@ Options:
 conn = None
 
 
-def connect(env):
-    """Connect to the database associated with this environment."""
-    global conn
-    conn = psycopg2.connect(
-        database=config.db[env]['db'],
-        user=config.db[env]['user'],
-        cursor_factory=NamedTupleCursor)
-    conn.autocommit = True
-
-
 def get_tickers():
     """Get all the tickers to poll from the database."""
-    with conn.cursor() as cur:
+    with db.conn.cursor() as cur:
         cur.execute('''
             SELECT ticker AS name
             FROM assets
@@ -84,14 +75,13 @@ def get_quote(symbol, crumb, cookie):
 
 def update_prices_for_ticker(symbol, lines):
     """Use historical data in `lines` to populate prices table."""
-    global conn
     for line in lines:
         if len(line) == 0:
             continue
         values = line.split(',')
         day = dt.strptime(values[0], '%Y-%m-%d').date()
 
-        with conn.cursor() as cur:
+        with db.conn.cursor() as cur:
             cur.execute('''
                 INSERT INTO assetprices (ticker, day, ask, bid, close)
                 VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s)
@@ -108,9 +98,9 @@ def update_prices_for_ticker(symbol, lines):
 
 def main(args):
     env = args['--env']
-    crumb = None
     cookie = None
-    connect(env)
+    crumb = None
+    db.connect(env)
     for ticker in get_tickers():
         if not cookie:
             cookie, crumb = get_cookie_and_crumb(ticker.name)
