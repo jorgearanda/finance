@@ -12,10 +12,11 @@ def connect(env=_env):
     """Connect to finance database.
 
     The connection becomes available on the `conn` singleton variable.
-    Subsequent calls to `connect()` will release any previous connections and reconnect.
+    Subsequent calls to `connect()` release previous connections and reconnect.
 
     Keyword arguments:
-    env -- environment to connect to; must be a key in the `config.db` dict (default 'dev')
+    env -- environment to connect to.
+           Must be a key in the `config.db` dict (default 'dev')
 
     Returns:
     bool -- True if the connection is alive
@@ -24,18 +25,36 @@ def connect(env=_env):
     _env = env
 
     global conn
-    conn = psycopg2.connect(database=config.db[env]['db'], user=config.db[env]['user'], cursor_factory=NamedTupleCursor)
+    conn = psycopg2.connect(
+        database=config.db[env]['db'],
+        user=config.db[env]['user'],
+        cursor_factory=NamedTupleCursor)
     conn.autocommit = True
 
     return is_alive()
 
 
-def ensure_connected():
-    """Check if there is a database connection, and connect if there is not."""
+def ensure_connected(env=None):
+    """Check if there is a database connection, and connect if there is not.
+
+    This module does not allow switching between connections to different
+    environments.
+
+    If there is an existing connection, and `ensure_connected` is called
+    with a different environment parameter than the one we are connected to,
+    an exception will be raised.
+    """
+    global _env
+    if env is None:
+        env = _env
+
+    if conn is not None and env != _env:
+        raise Exception('Already connected to a different environment.')
+
+    _env = env
     if is_alive():
         return True
     else:
-        global _env
         return connect(_env)
 
 

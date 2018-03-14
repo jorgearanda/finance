@@ -32,3 +32,15 @@ def test_ensure_connected_does_not_reconnect_pointlessly():
     conn2 = db.conn
 
     assert conn1 == conn2
+
+
+def test_no_switching_db_environments():
+    db.ensure_connected()
+
+    assert db._env == 'test'
+
+    with pytest.raises(Exception):
+        db.ensure_connected('diff')
+
+    assert db._env == 'test'
+    assert db.is_alive()
