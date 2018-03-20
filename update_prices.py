@@ -38,12 +38,11 @@ def get_cookie_and_crumb(symbol):
     """Get cookie and crumb for further calls. The crumb is a bit tricky."""
     print('* Getting a cookie')
     url = f'https://finance.yahoo.com/quote/{symbol}/history?p={symbol}'
-    r = requests.get(url, timeout=3.0)
+    r = requests.get(url, timeout=5.0)
     cookie = {'B': r.cookies['B']}
-    content = r.content.decode('utf-8')
+    content = r.content.decode('unicode-escape')
     match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
     crumb = match.group(1)
-    time.sleep(0.5)  # Let Yahoo servers keep track of the cookie
 
     return cookie, crumb
 
@@ -61,7 +60,7 @@ def get_quote(symbol, crumb, cookie):
 
     while res is None and tries < 5:
         try:
-            res = requests.get(url, cookies=cookie, timeout=3.0)
+            res = requests.get(url, cookies=cookie, timeout=5.0)
         except:
             print('Error while fetching quotes. Will sleep, then try again.')
             tries += 1
@@ -105,7 +104,7 @@ def main(args):
             cookie, crumb = get_cookie_and_crumb(ticker.name)
         quote_lines = get_quote(ticker.name, crumb, cookie).split('\n')[1:]
         update_prices_for_ticker(ticker.name, quote_lines)
-        time.sleep(0.5)  # Be kind to the server
+        time.sleep(0.1)  # Be kind to the server
 
     print('Done!')
 
