@@ -79,6 +79,9 @@ def update_prices_for_ticker(symbol, lines):
             continue
         values = line.split(',')
         day = dt.strptime(values[0], '%Y-%m-%d').date()
+        if values[4] == 'null':
+            print(f'  - Skipping null price on {day}')
+            continue
 
         with db.conn.cursor() as cur:
             cur.execute('''
