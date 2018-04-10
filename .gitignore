@@ -6,3 +6,4 @@ populate/
 .cache/
 notebooks/Untitled.ipynb
 notebooks/Sandbox.ipynb
+.pytest_cache/

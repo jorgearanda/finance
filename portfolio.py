@@ -92,6 +92,7 @@ class Portfolio():
         df['mwrr'] = df['profit'] / df['avg_capital']
         df['mwrr_annualized'] = (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1
         df['volatility'] = df[(df['market_day'])]['day_returns'].expanding().std()
+        df['volatility'].fillna(method='ffill', inplace=True)
         df['10k_equivalent'] = 10000 * (df['twrr'] + 1)
         df['last_peak_twrr'] = df['twrr'].expanding().max()
         df['last_peak'] = \

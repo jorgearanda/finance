@@ -105,6 +105,7 @@ def test_portfolio_class_calculations(simple):
     assert p.by_day.ix['2017-03-06']['mwrr_annualized'] == approx(15.828796)
 
     assert math.isnan(p.by_day.ix['2017-03-02']['volatility'])
+    assert not math.isnan(p.by_day.ix['2017-03-04']['volatility'])
     assert p.by_day.ix['2017-03-06']['volatility'] == approx(0.0219350238)
 
     assert p.by_day.ix['2017-03-02']['10k_equivalent'] == 10000
