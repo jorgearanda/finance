@@ -1,6 +1,7 @@
 import calendar
 from datetime import date, datetime as dt, timedelta
 from docopt import docopt
+import grequests
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import re
@@ -47,33 +48,9 @@ def get_cookie_and_crumb(symbol):
     return cookie, crumb
 
 
-def get_quote(symbol, crumb, cookie):
-    """Query for the historical data of `symbol` for the last month."""
-    print(f'* Getting quotes for {symbol}')
-    ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
-    ts_to = calendar.timegm(date.today().timetuple())
-    url = f'https://query1.finance.yahoo.com/v7/finance/download/{symbol}?' + \
-        f'period1={ts_from}&period2={ts_to}&' + \
-        f'interval=1d&events=historical&crumb={crumb}'
-    res = None
-    tries = 0
-
-    while res is None and tries < 5:
-        try:
-            res = requests.get(url, cookies=cookie, timeout=5.0)
-        except:
-            print('Error while fetching quotes. Will sleep, then try again.')
-            tries += 1
-            time.sleep(1)
-
-    if res is not None:
-        return res.text
-    else:
-        raise Exception(f'Unable to get quote for {symbol}')
-
-
 def update_prices_for_ticker(symbol, lines):
     """Use historical data in `lines` to populate prices table."""
+    print(f'* Saving quotes for {symbol}')
     for line in lines:
         if len(line) == 0:
             continue
@@ -97,17 +74,35 @@ def update_prices_for_ticker(symbol, lines):
                 print(f'  - Inserted price for {day}')
 
 
+def create_ticker_requests(tickers, cookie, crumb):
+    ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
+    ts_to = calendar.timegm(date.today().timetuple())
+    base = 'https://query1.finance.yahoo.com/v7/finance/download/'
+    params = f'?period1={ts_from}&period2={ts_to}&' + \
+        f'interval=1d&events=historical&crumb={crumb}'
+
+    return (grequests.get(
+        base + ticker.name + params,
+        cookies=cookie, timeout=5.0) for ticker in tickers)
+
+
 def main(args):
     env = args['--env']
     cookie = None
     crumb = None
     db.connect(env)
-    for ticker in get_tickers():
-        if not cookie:
-            cookie, crumb = get_cookie_and_crumb(ticker.name)
-        quote_lines = get_quote(ticker.name, crumb, cookie).split('\n')[1:]
-        update_prices_for_ticker(ticker.name, quote_lines)
-        time.sleep(0.1)  # Be kind to the server
+    tickers = get_tickers()
+    if len(tickers) == 0:
+        print('--no tickers in database--')
+        return
+
+    cookie, crumb = get_cookie_and_crumb(tickers[0].name)
+    reqs = create_ticker_requests(tickers, cookie, crumb)
+    print('* Sending requests for quotes')
+    for res in grequests.map(reqs):
+        symbol = re.search(r'download/(.*)\?', res.request.url).group(1)
+        quote_lines = res.text.split('\n')[1:]
+        update_prices_for_ticker(symbol, quote_lines)
 
     print('Done!')
 
