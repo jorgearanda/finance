@@ -58,7 +58,7 @@ class Ticker():
             return None
 
     def distributions_from_start(self, day):
-        """Report the accumulated per-unit cash distribution up to the requested date."""
+        """Report the accumulated per-unit cash distribution up to the date."""
         try:
             return self.values['distributions_from_start'][day]
         except KeyError:
@@ -72,7 +72,7 @@ class Ticker():
             return None
 
     def returns(self, day):
-        """Report the per-unit total returns as a percentage, considering appreciation and distributions."""
+        """Report the per-unit total returns as a percentage."""
         try:
             return self.values['returns'][day]
         except KeyError:
@@ -94,7 +94,7 @@ class Ticker():
     def _get_daily_values(self):
         """Create a DataFrame with daily ticker data."""
         db.ensure_connected()
-        ticker_data = pd.read_sql_query(
+        df = pd.read_sql_query(
             '''WITH tickerdistributions AS
                 (SELECT day, amount::double precision
                 FROM distributions
@@ -116,18 +116,21 @@ class Ticker():
             index_col='day',
             parse_dates=['day'])
 
-        ticker_data['price'].fillna(method='ffill', inplace=True)
-        ticker_data['change'] = (ticker_data['price'] / ticker_data['price'].shift(1)) - 1.0
-        first_price_index = ticker_data['price'].first_valid_index()
-        if first_price_index:
-            ticker_data['change_from_start'] = (ticker_data['price'] / ticker_data['price'][first_price_index]) - 1.0
+        df['price'].fillna(method='ffill', inplace=True)
+        df['change'] = (df['price'] / df['price'].shift(1)) - 1.0
+        first_price_idx = df['price'].first_valid_index()
+        df['distributions_from_start'] = df['distribution'].cumsum()
+        if first_price_idx:
+            df['change_from_start'] = \
+                (df['price'] / df['price'][first_price_idx]) - 1.0
+            df['yield_from_start'] = \
+                df['distributions_from_start'] / df['price'][first_price_idx]
         else:  # there are no valid prices
-            ticker_data['change_from_start'] = 0.0
-        ticker_data['distributions_from_start'] = ticker_data['distribution'].cumsum()
-        ticker_data['yield_from_start'] = ticker_data['distributions_from_start'] / ticker_data['price']
-        ticker_data['returns'] = ticker_data['change_from_start'] + ticker_data['yield_from_start']
+            df['change_from_start'] = 0.0
+            df['yield_from_start'] = 0.0
+        df['returns'] = df['change_from_start'] + df['yield_from_start']
 
-        return ticker_data
+        return df
 
     def _get_volatility(self):
         """Calculate ticker price volatility."""

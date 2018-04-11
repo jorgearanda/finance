@@ -67,10 +67,10 @@ def test_values(simple):
 
     assert vcn.yield_from_start('2017-03-01') is None
     assert vcn.yield_from_start('2017-03-02') == approx(0)
-    assert vcn.yield_from_start('2017-03-03') == approx(0.1010 / 30.10)
-    assert vcn.yield_from_start('2017-03-04') == approx(0.1010 / 30.10)
-    assert vcn.yield_from_start('2017-03-05') == approx(0.1010 / 30.10)
-    assert vcn.yield_from_start('2017-03-06') == approx(0.2 / 29.85)
+    assert vcn.yield_from_start('2017-03-03') == approx(0.1010 / 30.00)
+    assert vcn.yield_from_start('2017-03-04') == approx(0.1010 / 30.00)
+    assert vcn.yield_from_start('2017-03-05') == approx(0.1010 / 30.00)
+    assert vcn.yield_from_start('2017-03-06') == approx(0.2 / 30.00)
 
     assert vcn.returns('2017-03-01') is None
     assert vcn.returns('2017-03-02') == approx(0)
