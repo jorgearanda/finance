@@ -94,17 +94,25 @@ class Ticker():
     def _get_daily_values(self):
         """Create a DataFrame with daily ticker data."""
         db.ensure_connected()
-        ticker_data = pd.read_sql_query('''
-            WITH tickerdistributions AS
-                (SELECT day, amount::double precision FROM distributions WHERE ticker = %(ticker_name)s)
-            SELECT m.day, m.open, p.close::double precision AS price, COALESCE(d.amount, 0) AS distribution
+        ticker_data = pd.read_sql_query(
+            '''WITH tickerdistributions AS
+                (SELECT day, amount::double precision
+                FROM distributions
+                WHERE ticker = %(ticker_name)s)
+            SELECT m.day, m.open, p.close::double precision AS price,
+                COALESCE(d.amount, 0) AS distribution
             FROM marketdays m LEFT JOIN assetprices p USING (day)
             LEFT JOIN tickerdistributions d USING (day)
             WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
-            AND (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
+            AND (%(from_day)s IS NULL OR m.day >= %(from_day)s)
+            AND m.day < %(today)s
             ORDER BY m.day ASC;''',
             con=db.conn,
-            params={'ticker_name': self.ticker_name, 'from_day': self.from_day, 'today': date.today()},
+            params={
+                'ticker_name': self.ticker_name,
+                'from_day': self.from_day,
+                'today': date.today()
+            },
             index_col='day',
             parse_dates=['day'])
 
