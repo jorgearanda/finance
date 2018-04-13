@@ -5,6 +5,7 @@ from components.positions import Positions
 from components.tickers import Tickers
 import config
 from db import db
+from util.update_prices import update_prices
 
 
 class Portfolio():
@@ -57,10 +58,12 @@ class Portfolio():
     def allocations(self):
         return self.positions.weights.ix[-1]
 
-    def __init__(self, account=None, from_day=None):
+    def __init__(self, account=None, from_day=None, update=True, verbose=True):
         """Instantiate a Portfolio object."""
         self.account = account
         self.from_day = from_day
+        if update:
+            update_prices(verbose)
         self.deposits = Deposits(account, from_day)
         self.tickers = Tickers(from_day)
         self.positions = Positions(account, from_day, self.tickers)

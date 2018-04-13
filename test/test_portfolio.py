@@ -15,7 +15,7 @@ def setup_function():
 
 
 def test_portfolio_class_instantiates():
-    p = Portfolio()
+    p = Portfolio(update=False)
     assert p is not None
     assert not p.account
     assert not p.from_day
@@ -23,7 +23,7 @@ def test_portfolio_class_instantiates():
 
 def test_portfolio_class_holds_portfolio_structures(simple):
     with freeze_time(dt(2017, 3, 7)):
-        p = Portfolio()
+        p = Portfolio(update=False)
 
     assert p.deposits
     assert p.tickers
@@ -32,7 +32,7 @@ def test_portfolio_class_holds_portfolio_structures(simple):
 
 def test_portfolio_class_calculations(simple):
     with freeze_time(dt(2017, 3, 7)):
-        p = Portfolio()
+        p = Portfolio(update=False)
 
     assert len(p.by_day) == 5
 
@@ -129,7 +129,7 @@ def test_portfolio_class_calculations(simple):
 
 def test_latest(simple):
     with freeze_time(dt(2017, 3, 7)):
-        p = Portfolio()
+        p = Portfolio(update=False)
         latest = p.latest()
 
     assert latest['days_from_start'] == 5
@@ -138,7 +138,7 @@ def test_latest(simple):
 
 def test_allocations(simple):
     with freeze_time(dt(2017, 3, 7)):
-        p = Portfolio()
+        p = Portfolio(update=False)
         allocations = p.allocations()
 
     assert allocations['Cash'] == approx(0.40496233512598245)
