@@ -1,3 +1,4 @@
+from datetime import timedelta
 import pandas as pd
 
 from components.deposits import Deposits
@@ -61,12 +62,15 @@ class Portfolio():
     def __init__(self, account=None, from_day=None, update=True, verbose=True):
         """Instantiate a Portfolio object."""
         self.account = account
-        self.from_day = from_day
+        if from_day is not None or account is None:
+            self.from_day = from_day
+        else:
+            self.from_day = self._get_start_date(account)
         if update:
             update_prices(verbose)
-        self.deposits = Deposits(account, from_day)
-        self.tickers = Tickers(from_day)
-        self.positions = Positions(account, from_day, self.tickers)
+        self.deposits = Deposits(self.account, self.from_day)
+        self.tickers = Tickers(self.from_day)
+        self.positions = Positions(self.account, self.from_day, self.tickers)
         if len(self.tickers.ticker_names) == 0:
             self.by_day = pd.DataFrame()
             return
@@ -105,3 +109,17 @@ class Portfolio():
         df['sharpe'] = (df['twrr'] - config.sharpe * df['years_from_start']) / df['volatility']
         self.by_day = df
         self.positions.calc_weights(df['total_value'])
+
+    def _get_start_date(self, account_name):
+        db.ensure_connected()
+        with db.conn.cursor() as cur:
+            cur.execute(
+                '''SELECT datecreated
+                FROM accounts
+                WHERE name = %(account)s;''',
+                {'account': account_name})
+            account = cur.fetchone()
+
+        if account is None:
+            return None
+        return account.datecreated - timedelta(days=1)
