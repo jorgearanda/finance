@@ -69,7 +69,7 @@ class Portfolio():
         if update:
             update_prices(verbose)
         self.deposits = Deposits(self.account, self.from_day)
-        self.tickers = Tickers(self.from_day)
+        self.tickers = Tickers(self.account, self.from_day)
         self.positions = Positions(self.account, self.from_day, self.tickers)
         if len(self.tickers.ticker_names) == 0:
             self.by_day = pd.DataFrame()

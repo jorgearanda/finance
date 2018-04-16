@@ -31,9 +31,10 @@ class Tickers():
         """Return the price of ticker_name on the given day."""
         return self.tickers[ticker_name].price(day)
 
-    def __init__(self, from_day=None):
+    def __init__(self, account=None, from_day=None):
         """Instantiate a Tickers object, with dates starting on from_day."""
-        self.ticker_names = self._get_ticker_names(from_day)
+        self.account = account
+        self.ticker_names = self._get_ticker_names(account, from_day)
         self.tickers = self._get_tickers(from_day)
         if len(self.ticker_names) > 0:
             self.prices = self._collect_feature('price')
@@ -53,18 +54,35 @@ class Tickers():
     def __str__(self):
         return str(self.tickers)
 
-    def _get_ticker_names(self, from_day):
-        """Get all ticker names for which there are prices available since from_day."""
+    def _get_ticker_names(self, account, from_day):
+        """Get ticker names for which there are prices available."""
         db.ensure_connected()
         with db.conn.cursor() as cur:
-            cur.execute('''
-                SELECT DISTINCT(ticker) AS name
+            cur.execute(
+                '''SELECT DISTINCT(ticker) AS name
                 FROM assetprices
-                WHERE (%(from_day)s IS NULL OR day >= %(from_day)s) AND day < %(today)s
+                WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
+                    AND day < %(today)s
                 ORDER BY name ASC;''',
                 {'from_day': from_day, 'today': date.today()})
+            priced = [x.name for x in cur.fetchall()]
 
-            return [x.name for x in cur.fetchall()]
+            cur.execute(
+                '''SELECT DISTINCT(target) AS name
+                FROM transactions
+                WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
+                    AND day < %(today)s
+                    AND (%(account)s IS NULL OR account = %(account)s);''',
+                {
+                    'from_day': from_day,
+                    'today': date.today(),
+                    'account': account
+                })
+            bought = [x.name for x in cur.fetchall()]
+
+        all_names = list(set(priced).intersection(bought))
+        all_names.sort()
+        return all_names
 
     def _get_tickers(self, from_day):
         """Get all ticker objects."""
