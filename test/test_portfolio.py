@@ -96,13 +96,13 @@ def test_portfolio_class_calculations(simple):
     assert p.by_day.ix['2017-03-06']['twrr'] == approx((6185 - 5810.70 + 20) / 10000)
 
     assert p.by_day.ix['2017-03-02']['twrr_annualized'] == 0
-    assert p.by_day.ix['2017-03-06']['twrr_annualized'] == approx(15.828796)
+    assert p.by_day.ix['2017-03-06']['twrr_annualized'] == approx((6185 - 5810.70 + 20) / 10000)  # under a year, same as twrr
 
     assert p.by_day.ix['2017-03-02']['mwrr'] == 0
     assert p.by_day.ix['2017-03-06']['mwrr'] == approx((6185 - 5810.70 + 20) / 10000)
 
     assert p.by_day.ix['2017-03-02']['mwrr_annualized'] == 0
-    assert p.by_day.ix['2017-03-06']['mwrr_annualized'] == approx(15.828796)
+    assert p.by_day.ix['2017-03-06']['mwrr_annualized'] == approx((6185 - 5810.70 + 20) / 10000)  # under a year, same as mwrr
 
     assert math.isnan(p.by_day.ix['2017-03-02']['volatility'])
     assert not math.isnan(p.by_day.ix['2017-03-04']['volatility'])

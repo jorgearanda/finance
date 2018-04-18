@@ -1,4 +1,5 @@
 from datetime import timedelta
+import numpy as np
 import pandas as pd
 
 from components.deposits import Deposits
@@ -95,9 +96,11 @@ class Portfolio():
         df['distribution_returns'] = df['dividends'] / df['capital']
         df['returns'] = df['profit'] / df['capital']
         df['twrr'] = ((df['day_returns'] + 1).cumprod() - 1).fillna(0.00)
-        df['twrr_annualized'] = (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1
+        df['twrr_annualized'] = np.where(df['years_from_start'] > 1.0, (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1, df['twrr'])
+        # df['twrr_annualized'] = (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1
         df['mwrr'] = df['profit'] / df['avg_capital']
-        df['mwrr_annualized'] = (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1
+        df['mwrr_annualized'] = np.where(df['years_from_start'] > 1.0, (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1, df['mwrr'])
+        # df['mwrr_annualized'] = (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1
         df['volatility'] = df[(df['market_day'])]['day_returns'].expanding().std()
         df['volatility'].fillna(method='ffill', inplace=True)
         df['10k_equivalent'] = 10000 * (df['twrr'] + 1)
