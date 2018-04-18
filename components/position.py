@@ -3,6 +3,7 @@ import pandas as pd
 
 from components.ticker import Ticker
 from db import db
+from util.determine_accounts import determine_accounts
 
 
 class Position():
@@ -22,7 +23,7 @@ class Position():
     weight(date) -- Return the weight of this position on the whole portfolio, as a percentage
 
     Instance variables:
-    account -- Name of the account for this position. All accounts, if None
+    accounts -- Name of the accounts for this position. All accounts, if None
     ticker_name -- Name of the ticker
     values -- DataFrame indexed by day, with:
         - a `units` float column with the held units of this ticker on this date
@@ -119,10 +120,10 @@ class Position():
         except KeyError:
             return None
 
-    def __init__(self, ticker_name, account=None, from_day=None, ticker=None):
+    def __init__(self, ticker_name, accounts=None, from_day=None, ticker=None):
         """Instantiate a Position object."""
         self.ticker_name = ticker_name
-        self.account = account
+        self.accounts = determine_accounts(accounts)
         self.from_day = from_day
         if ticker:
             self._ticker = ticker
@@ -140,11 +141,11 @@ class Position():
     def _get_daily_values(self):
         """Create a DataFrame with daily position data."""
         db.ensure_connected()
-        position_data = pd.read_sql_query('''
-            WITH buys AS
+        position_data = pd.read_sql_query(
+            '''WITH buys AS
                 (SELECT SUM(units)::int AS units, SUM(total)::double precision AS total, day
                 FROM transactions
-                WHERE (%(account)s IS NULL OR account = %(account)s)
+                WHERE account = ANY(%(accounts)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND txtype = 'buy'
                     AND target = %(ticker_name)s
@@ -153,7 +154,7 @@ class Position():
             dividends AS
                 (SELECT SUM(total)::double precision AS total, day
                 FROM transactions
-                WHERE (%(account)s IS NULL OR account = %(account)s)
+                WHERE account = ANY(%(accounts)s)
                     AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND txtype = 'dividend'
                     AND source = %(ticker_name)s
@@ -166,7 +167,7 @@ class Position():
             ORDER BY m.day ASC;''',
             con=db.conn,
             params={
-                'account': self.account,
+                'accounts': self.accounts,
                 'ticker_name': self.ticker_name,
                 'from_day': self.from_day,
                 'today': date.today()

@@ -7,6 +7,7 @@ from components.positions import Positions
 from components.tickers import Tickers
 import config
 from db import db
+from util.determine_accounts import determine_accounts
 from util.update_prices import update_prices
 
 
@@ -18,7 +19,7 @@ class Portfolio():
     allocations() -- Return the latest asset allocations for this portfolio
 
     Instance variables:
-    account -- str, the account for this portfolio. If None, the portfolio represents all accounts in the database
+    accounts -- list, the accounts for this portfolio. If None, the portfolio represents all accounts
     from_day -- date, the start date for accounting. If None, data is not filtered by date
     deposits -- Deposits object, with all deposits relevant to the portfolio
     tickers -- Tickers object, with all tickers relevant to the portfolio
@@ -60,18 +61,18 @@ class Portfolio():
     def allocations(self):
         return self.positions.weights.ix[-1]
 
-    def __init__(self, account=None, from_day=None, update=True, verbose=True):
+    def __init__(self, accounts=None, from_day=None, update=True, verbose=True):
         """Instantiate a Portfolio object."""
-        self.account = account
-        if from_day is not None or account is None:
+        self.accounts = determine_accounts(accounts)
+        if from_day is not None:
             self.from_day = from_day
         else:
-            self.from_day = self._get_start_date(account)
+            self.from_day = self._get_start_date(self.accounts)
         if update:
             update_prices(verbose)
-        self.deposits = Deposits(self.account, self.from_day)
-        self.tickers = Tickers(self.account, self.from_day)
-        self.positions = Positions(self.account, self.from_day, self.tickers)
+        self.deposits = Deposits(self.accounts, self.from_day)
+        self.tickers = Tickers(self.accounts, self.from_day)
+        self.positions = Positions(self.accounts, self.from_day, self.tickers)
         if len(self.tickers.ticker_names) == 0:
             self.by_day = pd.DataFrame()
             return
@@ -97,10 +98,8 @@ class Portfolio():
         df['returns'] = df['profit'] / df['capital']
         df['twrr'] = ((df['day_returns'] + 1).cumprod() - 1).fillna(0.00)
         df['twrr_annualized'] = np.where(df['years_from_start'] > 1.0, (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1, df['twrr'])
-        # df['twrr_annualized'] = (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1
         df['mwrr'] = df['profit'] / df['avg_capital']
         df['mwrr_annualized'] = np.where(df['years_from_start'] > 1.0, (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1, df['mwrr'])
-        # df['mwrr_annualized'] = (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1
         df['volatility'] = df[(df['market_day'])]['day_returns'].expanding().std()
         df['volatility'].fillna(method='ffill', inplace=True)
         df['10k_equivalent'] = 10000 * (df['twrr'] + 1)
@@ -113,16 +112,16 @@ class Portfolio():
         self.by_day = df
         self.positions.calc_weights(df['total_value'])
 
-    def _get_start_date(self, account_name):
+    def _get_start_date(self, accounts):
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute(
-                '''SELECT datecreated
+                '''SELECT MIN(datecreated) AS datecreated
                 FROM accounts
-                WHERE name = %(account)s;''',
-                {'account': account_name})
-            account = cur.fetchone()
+                WHERE name = ANY(%(accounts)s);''',
+                {'accounts': accounts})
+            date_created = cur.fetchone().datecreated
 
-        if account is None:
+        if date_created is None:
             return None
-        return account.datecreated - timedelta(days=1)
+        return date_created - timedelta(days=1)

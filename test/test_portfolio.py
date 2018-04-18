@@ -17,7 +17,7 @@ def setup_function():
 def test_portfolio_class_instantiates():
     p = Portfolio(update=False)
     assert p is not None
-    assert not p.account
+    assert len(p.accounts) == 0
     assert not p.from_day
 
 

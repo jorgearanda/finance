@@ -3,6 +3,7 @@ import pandas as pd
 
 from components.ticker import Ticker
 from db import db
+from util.determine_accounts import determine_accounts
 
 
 class Tickers():
@@ -31,10 +32,10 @@ class Tickers():
         """Return the price of ticker_name on the given day."""
         return self.tickers[ticker_name].price(day)
 
-    def __init__(self, account=None, from_day=None):
+    def __init__(self, accounts=None, from_day=None):
         """Instantiate a Tickers object, with dates starting on from_day."""
-        self.account = account
-        self.ticker_names = self._get_ticker_names(account, from_day)
+        self.accounts = determine_accounts(accounts)
+        self.ticker_names = self._get_ticker_names(self.accounts, from_day)
         self.tickers = self._get_tickers(from_day)
         if len(self.ticker_names) > 0:
             self.prices = self._collect_feature('price')
@@ -54,7 +55,7 @@ class Tickers():
     def __str__(self):
         return str(self.tickers)
 
-    def _get_ticker_names(self, account, from_day):
+    def _get_ticker_names(self, accounts, from_day):
         """Get ticker names for which there are prices available."""
         db.ensure_connected()
         with db.conn.cursor() as cur:
@@ -72,11 +73,11 @@ class Tickers():
                 FROM transactions
                 WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND day < %(today)s
-                    AND (%(account)s IS NULL OR account = %(account)s);''',
+                    AND account = ANY(%(accounts)s);''',
                 {
                     'from_day': from_day,
                     'today': date.today(),
-                    'account': account
+                    'accounts': accounts
                 })
             bought = [x.name for x in cur.fetchall()]
 

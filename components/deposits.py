@@ -2,6 +2,7 @@ from datetime import date
 import pandas as pd
 
 from db import db
+from util.determine_accounts import determine_accounts
 
 
 class Deposits():
@@ -22,10 +23,10 @@ class Deposits():
         except KeyError:
             return None
 
-    def __init__(self, account=None, from_day=None):
+    def __init__(self, accounts=None, from_day=None):
         """Instantiate a Deposits object."""
-        self.account = account
-        self.deposits = self._get_deposits(account, from_day)
+        self.accounts = determine_accounts(accounts)
+        self.deposits = self._get_deposits(self.accounts, from_day)
 
     def __repr__(self):
         return str(self.deposits)
@@ -33,12 +34,12 @@ class Deposits():
     def __str__(self):
         return str(self.deposits)
 
-    def _get_deposits(self, account, from_day):
+    def _get_deposits(self, accounts, from_day):
         db.ensure_connected()
         _deposits = pd.read_sql_query(
             '''SELECT SUM(total)::double precision AS amount, day
             FROM transactions
-            WHERE (%(account)s IS NULL OR account = %(account)s)
+            WHERE account = ANY(%(accounts)s)
                 AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                 AND day < %(today)s
                 AND txtype = 'deposit'
@@ -46,7 +47,7 @@ class Deposits():
             ORDER BY day ASC;''',
             con=db.conn,
             params={
-                'account': account,
+                'accounts': accounts,
                 'from_day': from_day,
                 'today': date.today()
             },

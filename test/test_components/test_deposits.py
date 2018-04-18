@@ -14,7 +14,7 @@ def setup_function():
 def test_deposits_class_instantiates():
     d = Deposits()
     assert d is not None
-    assert not d.account
+    assert len(d.accounts) == 0
     assert 'Empty' in d.__repr__()
     assert 'Empty' in str(d)
 

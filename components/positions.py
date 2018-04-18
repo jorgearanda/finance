@@ -3,6 +3,7 @@ import pandas as pd
 from components.position import Position
 from components.tickers import Tickers
 from db import db
+from util.determine_accounts import determine_accounts
 
 
 class Positions():
@@ -12,7 +13,7 @@ class Positions():
     calc_weights -- Trigger weight calculations for all positions in this object
 
     Instance variables:
-    account -- Name of the account for these positions. All accounts, if None
+    accounts -- Names of the accounts for these positions. All accounts, if None
     ticker_names -- List with the ticker names contained in the object
     positions -- Dict with ticker names as keys and Position objects as values
     units -- DataFrame, day-indexed, one position per column. Daily number of units held in the position
@@ -35,13 +36,13 @@ class Positions():
         self.weights = self._collect_feature('weight')
         self.weights['Cash'] = 1 - self.weights.sum(axis=1)
 
-    def __init__(self, account=None, from_day=None, tickers=None):
-        self.account = account
+    def __init__(self, accounts=None, from_day=None, tickers=None):
+        self.accounts = determine_accounts(accounts)
         if not tickers:
             tickers = Tickers(from_day)
         self.ticker_names = tickers.ticker_names
         self.positions = {
-            name: Position(name, account=account, from_day=from_day, ticker=tickers.tickers[name])
+            name: Position(name, accounts=self.accounts, from_day=from_day, ticker=tickers.tickers[name])
             for name in self.ticker_names
         }
         if len(self.ticker_names) > 0:
