@@ -127,6 +127,14 @@ def test_portfolio_class_calculations(simple):
     assert p.by_day.ix['2017-03-06']['sharpe'] == approx(1.7869651525257371)
 
 
+def test_by_month_exists(simple):
+    # Need a more complex fixture to test by_month actual values
+    with freeze_time(dt(2017, 3, 7)):
+        p = Portfolio(update=False)
+
+    assert p.by_month is not None
+
+
 def test_latest(simple):
     with freeze_time(dt(2017, 3, 7)):
         p = Portfolio(update=False)

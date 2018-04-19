@@ -53,6 +53,11 @@ class Portfolio():
         - `current_drawdown` float, percentage drop in returns from the last peak
         - `greatest_drawdown` float, greatest percentage drop in returns in the lifetime of the portfolio
         - `sharpe` float, Sharpe ratio of the portfolio as a whole
+    by_month -- DataFrame indexed by end of month, similar to by_day but
+                with the following additional Series:
+        - `month_deposits` float, mirroring `day_deposits` in `by_day`
+        - `month_profits` float, mirroring `day_profits` in `by_day`
+        - `month_returns` float, mirroring `day_returns` in `by_day`
     """
 
     def latest(self):
@@ -73,9 +78,28 @@ class Portfolio():
         self.deposits = Deposits(self.accounts, self.from_day)
         self.tickers = Tickers(self.accounts, self.from_day)
         self.positions = Positions(self.accounts, self.from_day, self.tickers)
+        self.by_day = self._calc_daily()
+        self.by_month = self._calc_monthly()
+        if len(self.by_day.index) > 0:
+            self.positions.calc_weights(self.by_day['total_value'])
+
+    def _get_start_date(self, accounts):
+        db.ensure_connected()
+        with db.conn.cursor() as cur:
+            cur.execute(
+                '''SELECT MIN(datecreated) AS datecreated
+                FROM accounts
+                WHERE name = ANY(%(accounts)s);''',
+                {'accounts': accounts})
+            date_created = cur.fetchone().datecreated
+
+        if date_created is None:
+            return None
+        return date_created - timedelta(days=1)
+
+    def _calc_daily(self):
         if len(self.tickers.ticker_names) == 0:
-            self.by_day = pd.DataFrame()
-            return
+            return pd.DataFrame()
         df = pd.DataFrame(index=self.tickers.prices.index)
         df['days_from_start'] = range(1, len(df) + 1)
         df['years_from_start'] = df['days_from_start'] / 365.0
@@ -109,19 +133,22 @@ class Portfolio():
         df['current_drawdown'] = (df['twrr'] - df['last_peak_twrr']) / (1 + df['last_peak_twrr'])
         df['greatest_drawdown'] = df['current_drawdown'].expanding().min()
         df['sharpe'] = (df['twrr'] - config.sharpe * df['years_from_start']) / df['volatility']
-        self.by_day = df
-        self.positions.calc_weights(df['total_value'])
 
-    def _get_start_date(self, accounts):
-        db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute(
-                '''SELECT MIN(datecreated) AS datecreated
-                FROM accounts
-                WHERE name = ANY(%(accounts)s);''',
-                {'accounts': accounts})
-            date_created = cur.fetchone().datecreated
+        return df
 
-        if date_created is None:
-            return None
-        return date_created - timedelta(days=1)
+    def _calc_monthly(self):
+        if len(self.tickers.ticker_names) == 0:
+            return pd.DataFrame()
+        df = self.by_day.drop(
+            ['market_day', 'day_deposits', 'day_profit', 'day_returns'],
+            axis=1).asfreq('M')
+        df['month_deposits'] = \
+            df['capital'] - df['capital'].shift(1).fillna(0.00)
+        df['month_profit'] = \
+            df['total_value'] - df['total_value'].shift(1).fillna(0.00) - \
+            df['month_deposits']
+        df['month_returns'] = \
+            df['month_profit'] / \
+            df['total_value'].shift(1).fillna(df['month_deposits'])
+
+        return df
