@@ -35,7 +35,7 @@ def test_values(simple):
     assert vcn.price('2017-03-04') == approx(30.10)
     assert vcn.price('2017-03-05') == approx(30.10)
     assert vcn.price('2017-03-06') == approx(29.85)
-    assert vcn.price('2017-03-07') is None
+    assert vcn.price('2017-03-08') is None
 
     assert vcn.change('2017-03-01') is None
     assert pd.isnull(vcn.change('2017-03-02'))  # Because the previous price is None

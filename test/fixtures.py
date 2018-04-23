@@ -23,7 +23,8 @@ def simple():
                 ('2017-03-04', false),
                 ('2017-03-05', false),
                 ('2017-03-06', true),
-                ('2017-03-07', true);''')
+                ('2017-03-07', true),
+                ('2017-03-08', true);''')
         cur.execute('''
             INSERT INTO assetclasses (name, domesticcurrency)
             VALUES
@@ -42,11 +43,13 @@ def simple():
                 ('VCN.TO', '2017-03-02', 30.00),
                 ('VCN.TO', '2017-03-03', 30.10),
                 ('VCN.TO', '2017-03-06', 29.85),
-                ('VCN.TO', '2017-03-07', 30.15),
+                ('VCN.TO', '2017-03-07', 29.85),
+                ('VCN.TO', '2017-03-08', 30.15),
                 ('VEE.TO', '2017-03-02', 29.00),
                 ('VEE.TO', '2017-03-03', 28.00),
                 ('VEE.TO', '2017-03-06', 32.00),
-                ('VEE.TO', '2017-03-07', 31.00);''')
+                ('VEE.TO', '2017-03-07', 32.00),
+                ('VEE.TO', '2017-03-08', 31.00);''')
         cur.execute('''
             INSERT INTO distributions (ticker, day, amount)
             VALUES

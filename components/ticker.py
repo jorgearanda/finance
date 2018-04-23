@@ -105,7 +105,7 @@ class Ticker():
             LEFT JOIN tickerdistributions d USING (day)
             WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
             AND (%(from_day)s IS NULL OR m.day >= %(from_day)s)
-            AND m.day < %(today)s
+            AND m.day <= %(today)s
             ORDER BY m.day ASC;''',
             con=db.conn,
             params={

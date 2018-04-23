@@ -41,7 +41,7 @@ class Deposits():
             FROM transactions
             WHERE account = ANY(%(accounts)s)
                 AND (%(from_day)s IS NULL OR day >= %(from_day)s)
-                AND day < %(today)s
+                AND day <= %(today)s
                 AND txtype = 'deposit'
             GROUP BY day
             ORDER BY day ASC;''',

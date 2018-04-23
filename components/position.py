@@ -163,7 +163,7 @@ class Position():
             SELECT m.day, buys.units, buys.total AS cost, dividends.total AS distributions
             FROM marketdays m LEFT JOIN buys USING (day)
             LEFT JOIN dividends USING (day)
-            WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day < %(today)s
+            WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s) AND m.day <= %(today)s
             ORDER BY m.day ASC;''',
             con=db.conn,
             params={

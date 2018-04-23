@@ -34,7 +34,7 @@ def test_portfolio_class_calculations(simple):
     with freeze_time(dt(2017, 3, 7)):
         p = Portfolio(update=False)
 
-    assert len(p.by_day) == 5
+    assert len(p.by_day) == 6
 
     assert p.by_day.ix['2017-03-02']['days_from_start'] == 1
     assert p.by_day.ix['2017-03-06']['days_from_start'] == 5
@@ -140,7 +140,7 @@ def test_latest(simple):
         p = Portfolio(update=False)
         latest = p.latest()
 
-    assert latest['days_from_start'] == 5
+    assert latest['days_from_start'] == 6
     assert latest['total_value'] == approx(10000 + 6185 - 5810.70 + 20)
 
 

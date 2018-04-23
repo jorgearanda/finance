@@ -63,7 +63,7 @@ class Tickers():
                 '''SELECT DISTINCT(ticker) AS name
                 FROM assetprices
                 WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
-                    AND day < %(today)s
+                    AND day <= %(today)s
                 ORDER BY name ASC;''',
                 {'from_day': from_day, 'today': date.today()})
             priced = [x.name for x in cur.fetchall()]
@@ -72,7 +72,7 @@ class Tickers():
                 '''SELECT DISTINCT(target) AS name
                 FROM transactions
                 WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
-                    AND day < %(today)s
+                    AND day <= %(today)s
                     AND account = ANY(%(accounts)s);''',
                 {
                     'from_day': from_day,

@@ -1,6 +1,7 @@
 import calendar
 from datetime import date, datetime as dt, timedelta
 import grequests
+import math
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import re
@@ -71,29 +72,50 @@ def _update_prices_for_ticker(symbol, lines):
             continue
         values = line.split(',')
         day = dt.strptime(values[0], '%Y-%m-%d').date()
-        if values[4] == 'null':
+        close = values[4]
+        if close == 'null':
             if verbose:
                 print(f'  - Skipping null price on {day}')
             continue
 
         with db.conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO assetprices (ticker, day, ask, bid, close)
-                VALUES (%(ticker)s, %(day)s, %(close)s, %(close)s, %(close)s)
-                ON CONFLICT DO NOTHING;''', {
+            cur.execute(
+                '''SELECT close FROM assetprices
+                WHERE ticker = %(ticker)s AND day = %(day)s;''', {
                     'ticker': symbol,
-                    'day': day,
-                    'close': values[4]
+                    'day': day
                 })
 
-            if cur.rowcount == 1:
+            if cur.rowcount == 0:
+                cur.execute('''
+                    INSERT INTO assetprices (ticker, day, ask, bid, close)
+                    VALUES (%(ticker)s, %(day)s,
+                        %(close)s, %(close)s, %(close)s)
+                    ON CONFLICT DO NOTHING;''', {
+                        'ticker': symbol,
+                        'day': day,
+                        'close': close
+                    })
                 if verbose:
                     print(f'  - Inserted price for {day}')
+            else:
+                old = cur.fetchone().close
+                if not math.isclose(float(old), float(close), rel_tol=1e-6):
+                    cur.execute(
+                        '''UPDATE assetprices
+                        SET ask = %(close)s, bid = %(close)s, close = %(close)s
+                        WHERE ticker = %(ticker)s AND day = %(day)s;''', {
+                            'ticker': symbol,
+                            'day': day,
+                            'close': close
+                        })
+                    if verbose:
+                        print(f'  - Updated price for {day}')
 
 
 def _create_ticker_requests(tickers, cookie, crumb):
     ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
-    ts_to = calendar.timegm(date.today().timetuple())
+    ts_to = calendar.timegm((date.today() + timedelta(days=1)).timetuple())
     base = 'https://query1.finance.yahoo.com/v7/finance/download/'
     params = f'?period1={ts_from}&period2={ts_to}&' + \
         f'interval=1d&events=historical&crumb={crumb}'
