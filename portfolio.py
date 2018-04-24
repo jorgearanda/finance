@@ -16,7 +16,7 @@ class Portfolio():
 
     Public methods:
     latest() -- Return the latest daily metrics
-    latest_month() -- Return the latest monthly metrics
+    last_month() -- Return the latest monthly metrics
     allocations() -- Return the latest asset allocations
 
     Instance variables:
@@ -64,7 +64,7 @@ class Portfolio():
     def latest(self):
         return self.by_day.ix[-1]
 
-    def latest_month(self):
+    def last_month(self):
         return self.by_month.ix[-1]
 
     def allocations(self):
