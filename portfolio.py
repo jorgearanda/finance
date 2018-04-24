@@ -15,8 +15,9 @@ class Portfolio():
     """Hold performance information for an investment account or portfolio.
 
     Public methods:
-    latest() -- Return the latest metrics for this portfolio
-    allocations() -- Return the latest asset allocations for this portfolio
+    latest() -- Return the latest daily metrics
+    latest_month() -- Return the latest monthly metrics
+    allocations() -- Return the latest asset allocations
 
     Instance variables:
     accounts -- list, the accounts for this portfolio. If None, the portfolio represents all accounts
@@ -62,6 +63,9 @@ class Portfolio():
 
     def latest(self):
         return self.by_day.ix[-1]
+
+    def latest_month(self):
+        return self.by_month.ix[-1]
 
     def allocations(self):
         return self.positions.weights.ix[-1]
