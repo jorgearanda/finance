@@ -9,5 +9,8 @@ def determine_accounts(accounts):
             cur.execute('''SELECT name FROM accounts;''')
             return [x.name for x in cur.fetchall()]
     if type(accounts) is str:
-        return [accounts]
+        if ',' in accounts:
+            return accounts.split(',')
+        else:
+            return [accounts]
     return accounts

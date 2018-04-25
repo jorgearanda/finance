@@ -62,10 +62,16 @@ class Portfolio():
     """
 
     def latest(self):
-        return self.by_day.ix[-1]
+        if len(self.by_day.index) > 0:
+            return self.by_day.ix[-1]
+        else:
+            return None
 
     def last_month(self):
-        return self.by_month.ix[-1]
+        if len(self.by_month.index) > 0:
+            return self.by_month.ix[-1]
+        else:
+            return None
 
     def allocations(self):
         return self.positions.weights.ix[-1]
