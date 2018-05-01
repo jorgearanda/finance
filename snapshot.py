@@ -7,11 +7,12 @@ usage = """
 Provide a snapshot of the state of a portfolio.
 
 Usage:
-    snapshot.py [-h] [--accounts <accounts>] [--update] [--verbose]
+    snapshot.py [-h] [--accounts <accts>] [--update] [--verbose] [--positions]
 
 Options:
     -h --help                      Show this
     -a <accts> --accounts <accts>  Include only data for the account(s) listed
+    -p --positions                 Include position data
     -u --update                    Fetch new prices from external server
     -v --verbose                   Use verbose mode
 """
@@ -57,6 +58,13 @@ def snapshot(args):
     print(
         f'Month Returns:{month_returns * 100:12,.2f}%     ' +
         f'Last Month:   {prev_month_returns * 100:12,.2f}%')
+
+    if args['--positions']:
+        print()
+        print('Ticker               Weight')
+        weights = p.positions.weights.ix[-1]
+        for position in weights.index:
+            print(f'{position:6}:       {weights[position] * 100:12,.2f}%')
 
 
 if __name__ == '__main__':

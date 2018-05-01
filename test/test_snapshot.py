@@ -12,7 +12,8 @@ def test_snapshot_does_not_crash(simple):
     snapshot({
         '--accounts': None,
         '--update': False,
-        '--verbose': False
+        '--verbose': False,
+        '--positions': True
     })
 
     assert True
