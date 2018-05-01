@@ -24,17 +24,21 @@ def snapshot(args):
         update=args['--update'],
         verbose=args['--verbose'])
     latest = p.latest()
-    prev_month = p.last_month()
+    prev_month = p.previous_month()
+    current_month = p.current_month()
     if prev_month is not None:
         prev_month_profit = prev_month['month_profit']
         prev_month_returns = prev_month['month_returns']
-        month_profit = latest['profit'] - prev_month['profit']
-        month_returns = month_profit / prev_month['total_value']
     else:
         prev_month_profit = 0
         prev_month_returns = 0
-        month_profit = latest['profit']
-        month_returns = latest['returns']
+
+    if current_month is not None:
+        current_month_profit = current_month['month_profit']
+        current_month_returns = current_month['month_returns']
+    else:
+        current_month_profit = 0
+        current_month_returns = 0
 
     print('Portfolio Snapshot')
     print('===========================================================')
@@ -53,10 +57,10 @@ def snapshot(args):
     print(f'Day Returns:  {latest["day_returns"] * 100:12,.2f}%')
     print()
     print(
-        f'Month Profit: {month_profit:12,.2f}      ' +
+        f'Month Profit: {current_month_profit:12,.2f}      ' +
         f'Last Month:   {prev_month_profit:12,.2f}')
     print(
-        f'Month Returns:{month_returns * 100:12,.2f}%     ' +
+        f'Month Returns:{current_month_returns * 100:12,.2f}%     ' +
         f'Last Month:   {prev_month_returns * 100:12,.2f}%')
 
     if args['--positions']:

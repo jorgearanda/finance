@@ -16,7 +16,8 @@ class Portfolio():
 
     Public methods:
     latest() -- Return the latest daily metrics
-    last_month() -- Return the latest monthly metrics
+    current_month() -- Return the current month's metrics
+    previous_month() -- Return last month's metrics
     allocations() -- Return the latest asset allocations
 
     Instance variables:
@@ -67,9 +68,15 @@ class Portfolio():
         else:
             return None
 
-    def last_month(self):
+    def current_month(self):
         if len(self.by_month.index) > 0:
             return self.by_month.ix[-1]
+        else:
+            return None
+
+    def previous_month(self):
+        if len(self.by_month.index) > 1:
+            return self.by_month.ix[-2]
         else:
             return None
 
@@ -149,9 +156,12 @@ class Portfolio():
     def _calc_monthly(self):
         if len(self.tickers.ticker_names) == 0:
             return pd.DataFrame()
-        df = self.by_day.drop(
+        df = self.by_day.asfreq('M')
+        if df.index.values[-1] != self.by_day.index.values[-1]:
+            df = df.append(self.by_day.ix[-1])
+        df = df.drop(
             ['market_day', 'day_deposits', 'day_profit', 'day_returns'],
-            axis=1).asfreq('M')
+            axis=1)
         df['month_deposits'] = \
             df['capital'] - df['capital'].shift(1).fillna(0.00)
         df['month_profit'] = \
