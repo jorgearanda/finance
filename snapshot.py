@@ -67,10 +67,18 @@ def snapshot(args):
 
     if args['--positions']:
         print()
-        print('Ticker               Weight')
+        print('Ticker               Value      Weight')
         weights = p.positions.weights.ix[-1]
+        values = p.positions.market_values.ix[-1]
         for position in weights.index:
-            print(f'{position:6}:       {weights[position] * 100:12,.2f}%')
+            if position != 'Cash':
+                print(
+                    f'{position:6}:       {values[position]:12,.2f}   ' +
+                    f'{weights[position] * 100:8,.2f}%')
+            else:
+                print(
+                    f'{position:6}:       {latest["cash"]:12,.2f}   ' +
+                    f'{weights[position] * 100:8,.2f}%')
 
 
 if __name__ == '__main__':
