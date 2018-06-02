@@ -97,7 +97,7 @@ def _update_prices_for_ticker(symbol, lines):
                         'close': close
                     })
                 if verbose:
-                    print(f'  - Inserted price for {day}')
+                    print(f'  - Inserted price for {day}: {close}')
             else:
                 old = cur.fetchone().close
                 if not math.isclose(float(old), float(close), rel_tol=1e-6):
@@ -110,7 +110,7 @@ def _update_prices_for_ticker(symbol, lines):
                             'close': close
                         })
                     if verbose:
-                        print(f'  - Updated price for {day}')
+                        print(f'  - Updated price for {day}: {old} -> {close}')
 
 
 def _create_ticker_requests(tickers, cookie, crumb):
