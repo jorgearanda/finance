@@ -35,7 +35,7 @@ def update_prices(verbosity):
         _update_prices_for_ticker(symbol, quote_lines)
 
     if verbose:
-        print('Done!')
+        print('===Finishing price update utility===\n')
 
 
 def _get_tickers():
