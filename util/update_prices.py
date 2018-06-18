@@ -2,18 +2,15 @@ import calendar
 from datetime import date, datetime as dt, timedelta
 import grequests
 import math
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
 import re
 import requests
-import time
 
 from db import db
 
 verbose = False
 
 
-def update_prices(verbosity):
+def update_prices(verbosity=False):
     global verbose
     verbose = verbosity
     if verbose:
@@ -25,10 +22,10 @@ def update_prices(verbosity):
     if len(tickers) == 0:
         return
 
+    if verbose:
+        print('* Preparing queries')
     cookie, crumb = _get_cookie_and_crumb(tickers[0].name)
     reqs = _create_ticker_requests(tickers, cookie, crumb)
-    if verbose:
-        print('* Sending requests for quotes')
     for res in grequests.map(reqs):
         symbol = re.search(r'download/(.*)\?', res.request.url).group(1)
         quote_lines = res.text.split('\n')[1:]
@@ -50,9 +47,7 @@ def _get_tickers():
 
 
 def _get_cookie_and_crumb(symbol):
-    """Get cookie and crumb for further calls. The crumb is a bit tricky."""
-    if verbose:
-        print('* Getting a cookie')
+    """Get cookie and crumb for further calls."""
     url = f'https://finance.yahoo.com/quote/{symbol}/history?p={symbol}'
     r = requests.get(url, timeout=5.0)
     cookie = {'B': r.cookies['B']}
@@ -66,7 +61,7 @@ def _get_cookie_and_crumb(symbol):
 def _update_prices_for_ticker(symbol, lines):
     """Use historical data in `lines` to populate prices table."""
     if verbose:
-        print(f'* Saving quotes for {symbol}')
+        print(f'* Querying {symbol}')
     for line in lines:
         if len(line) == 0:
             continue
@@ -77,6 +72,7 @@ def _update_prices_for_ticker(symbol, lines):
             if verbose:
                 print(f'  - Skipping null price on {day}')
             continue
+        close = float(close)
 
         with db.conn.cursor() as cur:
             cur.execute(
@@ -100,7 +96,7 @@ def _update_prices_for_ticker(symbol, lines):
                     print(f'  - Inserted price for {day}: {close}')
             else:
                 old = cur.fetchone().close
-                if not math.isclose(float(old), float(close), rel_tol=1e-6):
+                if not math.isclose(float(old), close, rel_tol=1e-3):
                     cur.execute(
                         '''UPDATE assetprices
                         SET ask = %(close)s, bid = %(close)s, close = %(close)s
@@ -110,7 +106,7 @@ def _update_prices_for_ticker(symbol, lines):
                             'close': close
                         })
                     if verbose:
-                        print(f'  - Updated price for {day}: {old} -> {close}')
+                        print(f'  + {day}: {old} -> {close:.2f}')
 
 
 def _create_ticker_requests(tickers, cookie, crumb):
