@@ -70,7 +70,7 @@ def _update_prices_for_ticker(symbol, lines):
         close = values[4]
         if close == 'null':
             if verbose:
-                print(f'  - Skipping null price on {day}')
+                print(f'  x {day}: -null- (skipping)')
             continue
         close = float(close)
 
@@ -93,7 +93,7 @@ def _update_prices_for_ticker(symbol, lines):
                         'close': close
                     })
                 if verbose:
-                    print(f'  - Inserted price for {day}: {close}')
+                    print(f'  + {day}:  -.-- -> {close:.2f}')
             else:
                 old = cur.fetchone().close
                 if not math.isclose(float(old), close, rel_tol=1e-3):
