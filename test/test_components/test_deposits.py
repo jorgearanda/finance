@@ -3,7 +3,6 @@ from freezegun import freeze_time
 
 from components.deposits import Deposits
 from db import db
-from test.fixtures import simple
 
 
 def setup_function():

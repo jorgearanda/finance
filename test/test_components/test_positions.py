@@ -5,7 +5,6 @@ from pytest import approx
 
 from components.positions import Positions
 from db import db
-from test.fixtures import simple
 
 
 def setup_function():

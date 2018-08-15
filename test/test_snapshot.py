@@ -1,6 +1,5 @@
 from db import db
 from snapshot import snapshot
-from test.fixtures import simple
 
 
 def setup_function():

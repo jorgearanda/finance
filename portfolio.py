@@ -15,6 +15,7 @@ class Portfolio():
     """Hold performance information for an investment account or portfolio.
 
     Public methods:
+    val(prop, day) -- Return the value of property `prop` on date `day`
     latest() -- Return the latest daily metrics
     current_month() -- Return the current month's metrics
     previous_month() -- Return last month's metrics
@@ -61,6 +62,10 @@ class Portfolio():
         - `month_profits` float, mirroring `day_profits` in `by_day`
         - `month_returns` float, mirroring `day_returns` in `by_day`
     """
+
+    def val(self, prop, day):
+        """Return the value of property `prop` on day `day`."""
+        return self.by_day.ix[day][prop]
 
     def latest(self):
         if len(self.by_day.index) > 0:
@@ -157,6 +162,8 @@ class Portfolio():
         if len(self.tickers.ticker_names) == 0:
             return pd.DataFrame()
         df = self.by_day.asfreq('M')
+        if df.empty:
+            return df
         if df.index.values[-1] != self.by_day.index.values[-1]:
             df = df.append(self.by_day.ix[-1])
         df = df.drop(

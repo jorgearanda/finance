@@ -5,7 +5,6 @@ from pytest import approx
 
 from components.ticker import Ticker
 from db import db
-from test.fixtures import simple
 
 
 def setup_function():

@@ -5,6 +5,8 @@ from db import db
 
 @pytest.fixture
 def simple():
+    db._env = 'test'
+    db.ensure_connected()
     with db.conn.cursor() as cur:
         cur.execute('''
             INSERT INTO accounttypes (name, tax, margin)

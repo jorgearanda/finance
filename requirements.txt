@@ -12,6 +12,7 @@ numpy
 pandas
 psycopg2-binary
 pytest-cov
+pytest-watch
 requests
 scipy
 seaborn
