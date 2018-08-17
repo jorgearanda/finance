@@ -33,3 +33,11 @@ class TestSimpleSnapshot():
 
     def test_profit(self):
         assert 'Profit:             324.30' in s
+
+    def test_month_profit(self):
+        found = ['Month Profit:       324.30' in line for line in s]
+        assert True in found
+
+    def test_month_returns(self):
+        found = ['Month Returns:        3.24%' in line for line in s]
+        assert True in found
