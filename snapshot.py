@@ -40,54 +40,58 @@ def snapshot(args):
         current_month_profit = 0
         current_month_returns = 0
 
-    print('Portfolio Snapshot')
-    print('===========================================================')
-    print(f'Total Value:  {latest["total_value"]:12,.2f}')
-    print(f'Profit:       {latest["profit"]:12,.2f}')
-    print()
-    print(
+    rep = []
+    rep.append('Portfolio Snapshot')
+    rep.append('===========================================================')
+    rep.append(f'Total Value:  {latest["total_value"]:12,.2f}')
+    rep.append(f'Profit:       {latest["profit"]:12,.2f}')
+    rep.append('')
+    rep.append(
         f'TWRR:         {latest["twrr"] * 100:12,.2f}%     ' +
         f'TWRR Annual:  {latest["twrr_annualized"] * 100:12,.2f}%')
-    print(
+    rep.append(
         f'MWRR:         {latest["mwrr"] * 100:12,.2f}%     ' +
         f'MWRR Annual:  {latest["mwrr_annualized"] * 100:12,.2f}%')
-    print(
+    rep.append(
         f'Total Returns:{latest["returns"] * 100:12,.2f}%     ' +
         f'Drawdown:     {latest["current_drawdown"] * 100:12,.2f}%')
-    print()
-    print(f'Day Profit:   {latest["day_profit"]:12,.2f}')
-    print(f'Day Returns:  {latest["day_returns"] * 100:12,.2f}%')
-    print()
-    print(
+    rep.append('')
+    rep.append(f'Day Profit:   {latest["day_profit"]:12,.2f}')
+    rep.append(f'Day Returns:  {latest["day_returns"] * 100:12,.2f}%')
+    rep.append('')
+    rep.append(
         f'Month Profit: {current_month_profit:12,.2f}      ' +
         f'Last Month:   {prev_month_profit:12,.2f}')
-    print(
+    rep.append(
         f'Month Returns:{current_month_returns * 100:12,.2f}%     ' +
         f'Last Month:   {prev_month_returns * 100:12,.2f}%')
 
     if args['--positions']:
-        print()
-        print('Ticker                Price           Value      Weight')
+        rep.append('')
+        rep.append('Ticker                Price           Value      Weight')
         weights = p.positions.weights.ix[-1]
         values = p.positions.market_values.ix[-1]
         prices = p.tickers.prices.ix[-1]
         day_returns = p.tickers.changes.ix[-1]
         for position in weights.index:
             if position != 'Cash':
-                print(
+                rep.append(
                     f'{position:6}:      ' +
                     f'{prices[position]:6,.2f} ' +
                     f'({day_returns[position] * 100:5,.2f}%)   ' +
                     f'{values[position]:12,.2f}   ' +
                     f'{weights[position] * 100:8,.2f}%')
             else:
-                print(
+                rep.append(
                     f'{position:6}:      ' +
                     '     -            ' +
                     f'{latest["cash"]:12,.2f}   ' +
                     f'{weights[position] * 100:8,.2f}%')
 
+    return rep
+
 
 if __name__ == '__main__':
     args = docopt(usage, argv=None, help=True, options_first=False)
-    snapshot(args)
+    report = snapshot(args)
+    print('\n'.join(report))

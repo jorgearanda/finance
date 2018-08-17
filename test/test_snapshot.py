@@ -1,18 +1,35 @@
+import pytest
+
 from db import db
 from snapshot import snapshot
 
-
-def setup_function():
-    db._env = 'test'
-    db.ensure_connected()
+s = None
 
 
-def test_snapshot_does_not_crash(simple):
-    snapshot({
-        '--accounts': None,
-        '--update': False,
-        '--verbose': False,
-        '--positions': True
-    })
+def load_snapshot():
+    global s
+    if s is None:
+        s = snapshot({
+            '--accounts': None,
+            '--update': False,
+            '--verbose': False,
+            '--positions': True
+        })
 
-    assert True
+
+@pytest.mark.usefixtures('simple')
+class TestSimpleSnapshot():
+    def setup(self):
+        load_snapshot()
+
+    def test_smoke(self):
+        assert True
+
+    def test_title(self):
+        assert 'Portfolio Snapshot' in s
+
+    def test_total_value(self):
+        assert 'Total Value:     10,324.30' in s
+
+    def test_profit(self):
+        assert 'Profit:             324.30' in s
