@@ -162,9 +162,7 @@ class Portfolio():
         if len(self.tickers.ticker_names) == 0:
             return pd.DataFrame()
         df = self.by_day.asfreq('M')
-        if df.empty:
-            return df
-        if df.index.values[-1] != self.by_day.index.values[-1]:
+        if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
             df = df.append(self.by_day.ix[-1])
         df = df.drop(
             ['market_day', 'day_deposits', 'day_profit', 'day_returns'],
