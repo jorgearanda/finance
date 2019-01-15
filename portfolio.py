@@ -11,7 +11,7 @@ from util.determine_accounts import determine_accounts
 from util.update_prices import update_prices
 
 
-class Portfolio():
+class Portfolio:
     """Hold performance information for an investment account or portfolio.
 
     Public methods:
@@ -103,16 +103,17 @@ class Portfolio():
         self.by_day = self._calc_daily()
         self.by_month = self._calc_monthly()
         if len(self.by_day.index) > 0:
-            self.positions.calc_weights(self.by_day['total_value'])
+            self.positions.calc_weights(self.by_day["total_value"])
 
     def _get_start_date(self, accounts):
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute(
-                '''SELECT MIN(datecreated) AS datecreated
+                """SELECT MIN(datecreated) AS datecreated
                 FROM accounts
-                WHERE name = ANY(%(accounts)s);''',
-                {'accounts': accounts})
+                WHERE name = ANY(%(accounts)s);""",
+                {"accounts": accounts},
+            )
             date_created = cur.fetchone().datecreated
 
         if date_created is None:
@@ -120,60 +121,82 @@ class Portfolio():
         return date_created - timedelta(days=1)
 
     def _calc_daily(self):
-        if len(self.tickers.ticker_names) == 0:
+        if self._no_tickers():
             return pd.DataFrame()
         df = pd.DataFrame(index=self.tickers.prices.index)
-        df['days_from_start'] = range(1, len(df) + 1)
-        df['years_from_start'] = df['days_from_start'] / 365.0
-        df['market_day'] = self.tickers.market_day
-        df['day_deposits'] = self.deposits.deposits
-        df['day_deposits'].fillna(0.00, inplace=True)
-        df['capital'] = df['day_deposits'].cumsum()
-        df['avg_capital'] = df['capital'].expanding().mean()
-        df['positions_cost'] = self.positions.costs.sum(axis=1)
-        df['positions_value'] = self.positions.market_values.sum(axis=1)
-        df['appreciation'] = df['positions_value'] - df['positions_cost']
-        df['dividends'] = self.positions.distributions.sum(axis=1)
-        df['cash'] = df['capital'] + df['dividends'] - df['positions_cost']
-        df['total_value'] = df['cash'] + df['positions_value']
-        df['day_profit'] = (df['total_value'] - df['total_value'].shift(1) - df['day_deposits']).fillna(0.00)
-        df['day_returns'] = (df['day_profit'] / df['total_value'].shift(1)).fillna(0.00)
-        df['profit'] = df['total_value'] - df['capital']
-        df['appreciation_returns'] = df['appreciation'] / df['capital']
-        df['distribution_returns'] = df['dividends'] / df['capital']
-        df['returns'] = df['profit'] / df['capital']
-        df['twrr'] = ((df['day_returns'] + 1).cumprod() - 1).fillna(0.00)
-        df['twrr_annualized'] = np.where(df['years_from_start'] > 1.0, (1.0 + df['twrr']) ** (1 / df['years_from_start']) - 1, df['twrr'])
-        df['mwrr'] = df['profit'] / df['avg_capital']
-        df['mwrr_annualized'] = np.where(df['years_from_start'] > 1.0, (1.0 + df['mwrr']) ** (1 / df['years_from_start']) - 1, df['mwrr'])
-        df['volatility'] = df[(df['market_day'])]['day_returns'].expanding().std()
-        df['volatility'].fillna(method='ffill', inplace=True)
-        df['10k_equivalent'] = 10000 * (df['twrr'] + 1)
-        df['last_peak_twrr'] = df['twrr'].expanding().max()
-        df['last_peak'] = \
-            df['last_peak_twrr'].groupby(df['last_peak_twrr']).transform('idxmax').astype('datetime64[ns]')
-        df['current_drawdown'] = (df['twrr'] - df['last_peak_twrr']) / (1 + df['last_peak_twrr'])
-        df['greatest_drawdown'] = df['current_drawdown'].expanding().min()
-        df['sharpe'] = (df['twrr'] - config.sharpe * df['years_from_start']) / df['volatility']
+        df["days_from_start"] = range(1, len(df) + 1)
+        df["years_from_start"] = df["days_from_start"] / 365.0
+        df["market_day"] = self.tickers.market_day
+        df["day_deposits"] = self.deposits.deposits
+        df["day_deposits"].fillna(0.00, inplace=True)
+        df["capital"] = df["day_deposits"].cumsum()
+        df["avg_capital"] = df["capital"].expanding().mean()
+        df["positions_cost"] = self.positions.costs.sum(axis=1)
+        df["positions_value"] = self.positions.market_values.sum(axis=1)
+        df["appreciation"] = df["positions_value"] - df["positions_cost"]
+        df["dividends"] = self.positions.distributions.sum(axis=1)
+        df["cash"] = df["capital"] + df["dividends"] - df["positions_cost"]
+        df["total_value"] = df["cash"] + df["positions_value"]
+        df["day_profit"] = (
+            df["total_value"] - df["total_value"].shift(1) - df["day_deposits"]
+        ).fillna(0.00)
+        df["day_returns"] = (df["day_profit"] / df["total_value"].shift(1)).fillna(0.00)
+        df["profit"] = df["total_value"] - df["capital"]
+        df["appreciation_returns"] = df["appreciation"] / df["capital"]
+        df["distribution_returns"] = df["dividends"] / df["capital"]
+        df["returns"] = df["profit"] / df["capital"]
+        df["twrr"] = ((df["day_returns"] + 1).cumprod() - 1).fillna(0.00)
+        df["twrr_annualized"] = np.where(
+            df["years_from_start"] > 1.0,
+            (1.0 + df["twrr"]) ** (1 / df["years_from_start"]) - 1,
+            df["twrr"],
+        )
+        df["mwrr"] = df["profit"] / df["avg_capital"]
+        df["mwrr_annualized"] = np.where(
+            df["years_from_start"] > 1.0,
+            (1.0 + df["mwrr"]) ** (1 / df["years_from_start"]) - 1,
+            df["mwrr"],
+        )
+        df["volatility"] = df[(df["market_day"])]["day_returns"].expanding().std()
+        df["volatility"].fillna(method="ffill", inplace=True)
+        df["10k_equivalent"] = 10000 * (df["twrr"] + 1)
+        df["last_peak_twrr"] = df["twrr"].expanding().max()
+        df["last_peak"] = (
+            df["last_peak_twrr"]
+            .groupby(df["last_peak_twrr"])
+            .transform("idxmax")
+            .astype("datetime64[ns]")
+        )
+        df["current_drawdown"] = (df["twrr"] - df["last_peak_twrr"]) / (
+            1 + df["last_peak_twrr"]
+        )
+        df["greatest_drawdown"] = df["current_drawdown"].expanding().min()
+        df["sharpe"] = (df["twrr"] - config.sharpe * df["years_from_start"]) / df[
+            "volatility"
+        ]
 
         return df
 
     def _calc_monthly(self):
-        if len(self.tickers.ticker_names) == 0:
+        if self._no_tickers():
             return pd.DataFrame()
-        df = self.by_day.asfreq('M')
+        df = self.by_day.asfreq("M")
         if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
             df = df.append(self.by_day.ix[-1])
         df = df.drop(
-            ['market_day', 'day_deposits', 'day_profit', 'day_returns'],
-            axis=1)
-        df['month_deposits'] = \
-            df['capital'] - df['capital'].shift(1).fillna(0.00)
-        df['month_profit'] = \
-            df['total_value'] - df['total_value'].shift(1).fillna(0.00) - \
-            df['month_deposits']
-        df['month_returns'] = \
-            df['month_profit'] / \
-            df['total_value'].shift(1).fillna(df['month_deposits'])
+            ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
+        )
+        df["month_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00)
+        df["month_profit"] = (
+            df["total_value"]
+            - df["total_value"].shift(1).fillna(0.00)
+            - df["month_deposits"]
+        )
+        df["month_returns"] = df["month_profit"] / df["total_value"].shift(1).fillna(
+            df["month_deposits"]
+        )
 
         return df
+
+    def _no_tickers(self):
+        return len(self.tickers.ticker_names) == 0
