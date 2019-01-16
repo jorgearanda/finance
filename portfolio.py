@@ -188,11 +188,7 @@ class Portfolio:
             ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
         )
         df["month_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00)
-        df["month_profit"] = (
-            df["total_value"]
-            - df["total_value"].shift(1).fillna(0.00)
-            - df["month_deposits"]
-        )
+        df["month_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
         df["month_returns"] = df["month_profit"] / df["total_value"].shift(1).fillna(
             df["month_deposits"]
         )
