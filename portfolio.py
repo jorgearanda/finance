@@ -102,6 +102,7 @@ class Portfolio:
         self.positions = Positions(self.accounts, self.from_day, self.tickers)
         self.by_day = self._calc_daily()
         self.by_month = self._calc_monthly()
+        self.by_year = self._calc_yearly()
         if len(self.by_day.index) > 0:
             self.positions.calc_weights(self.by_day["total_value"])
 
@@ -195,6 +196,25 @@ class Portfolio:
         df["month_returns"] = df["month_profit"] / df["total_value"].shift(1).fillna(
             df["month_deposits"]
         )
+
+        return df
+
+    def _calc_yearly(self):
+        if self._no_tickers():
+            return pd.DataFrame()
+        df = self.by_day.asfreq("A")
+        if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
+            df = df.append(self.by_day.ix[-1])
+        df = df.drop(
+            ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
+        )
+        df["year_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0)
+        df["year_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
+        df["year_returns"] = (1 + df["returns"]) / (
+            1 + df["returns"].shift(1).fillna(0)
+        ) - 1
+        df["year_twrr"] = (1 + df["twrr"]) / (1 + df["twrr"].shift(1).fillna(0)) - 1
+        df["year_mwrr"] = (1 + df["mwrr"]) / (1 + df["mwrr"].shift(1).fillna(0)) - 1
 
         return df
 
