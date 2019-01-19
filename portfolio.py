@@ -8,6 +8,7 @@ from components.tickers import Tickers
 import config
 from db import db
 from util.determine_accounts import determine_accounts
+from util.relative_rate import relative_rate
 from util.update_prices import update_prices
 
 
@@ -189,9 +190,9 @@ class Portfolio:
         )
         df["month_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00)
         df["month_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
-        df["month_returns"] = (1 + df["returns"]) / (
-            1 + df["returns"].shift(1).fillna(0)
-        ) - 1
+        df["month_returns"] = relative_rate(df["returns"])
+        df["month_twrr"] = relative_rate(df["twrr"])
+        df["month_mwrr"] = relative_rate(df["mwrr"])
 
         return df
 
@@ -206,11 +207,9 @@ class Portfolio:
         )
         df["year_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0)
         df["year_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
-        df["year_returns"] = (1 + df["returns"]) / (
-            1 + df["returns"].shift(1).fillna(0)
-        ) - 1
-        df["year_twrr"] = (1 + df["twrr"]) / (1 + df["twrr"].shift(1).fillna(0)) - 1
-        df["year_mwrr"] = (1 + df["mwrr"]) / (1 + df["mwrr"].shift(1).fillna(0)) - 1
+        df["year_returns"] = relative_rate(df["returns"])
+        df["year_twrr"] = relative_rate(df["twrr"])
+        df["year_mwrr"] = relative_rate(df["mwrr"])
 
         return df
 
