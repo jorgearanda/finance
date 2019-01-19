@@ -15,6 +15,9 @@ def load_snapshot():
                 "--update": False,
                 "--verbose": False,
                 "--positions": True,
+                "--recent": True,
+                "--months": True,
+                "--years": True,
             }
         )
 
