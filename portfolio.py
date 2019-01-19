@@ -20,6 +20,8 @@ class Portfolio:
     latest() -- Return the latest daily metrics
     current_month() -- Return the current month's metrics
     previous_month() -- Return last month's metrics
+    current_year() -- Return the current year's metrics
+    previous_year() -- Return last year's metrics
     allocations() -- Return the latest asset allocations
 
     Instance variables:
@@ -83,6 +85,18 @@ class Portfolio:
     def previous_month(self):
         if len(self.by_month.index) > 1:
             return self.by_month.ix[-2]
+        else:
+            return None
+
+    def current_year(self):
+        if len(self.by_year.index) > 0:
+            return self.by_year.ix[-1]
+        else:
+            return None
+
+    def previous_year(self):
+        if len(self.by_year.index) > 1:
+            return self.by_year.ix[-2]
         else:
             return None
 
