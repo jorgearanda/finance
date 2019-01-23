@@ -1,10 +1,10 @@
 from datetime import date
 import pandas as pd
 
-from db import db
+from db.db import df_from_sql
 
 
-class Ticker():
+class Ticker:
     """DataFrame-based structure of ticker pricing data.
 
     Public methods:
@@ -32,49 +32,49 @@ class Ticker():
     def price(self, day):
         """Report the closing price for this ticker on the requested day."""
         try:
-            return self.values['price'][day]
+            return self.values["price"][day]
         except KeyError:
             return None
 
     def change(self, day):
         """Report the percentage price change from the date before."""
         try:
-            return self.values['change'][day]
+            return self.values["change"][day]
         except KeyError:
             return None
 
     def change_from_start(self, day):
         """Report the percentage price change from the initial value."""
         try:
-            return self.values['change_from_start'][day]
+            return self.values["change_from_start"][day]
         except KeyError:
             return None
 
     def distribution(self, day):
         """Report the per-unit cash distribution on the requested date."""
         try:
-            return self.values['distribution'][day]
+            return self.values["distribution"][day]
         except KeyError:
             return None
 
     def distributions_from_start(self, day):
         """Report the accumulated per-unit cash distribution up to the date."""
         try:
-            return self.values['distributions_from_start'][day]
+            return self.values["distributions_from_start"][day]
         except KeyError:
             return None
 
     def yield_from_start(self, day):
         """Report the per-unit yield on the requested date."""
         try:
-            return self.values['yield_from_start'][day]
+            return self.values["yield_from_start"][day]
         except KeyError:
             return None
 
     def returns(self, day):
         """Report the per-unit total returns as a percentage."""
         try:
-            return self.values['returns'][day]
+            return self.values["returns"][day]
         except KeyError:
             return None
 
@@ -93,9 +93,8 @@ class Ticker():
 
     def _get_daily_values(self):
         """Create a DataFrame with daily ticker data."""
-        db.ensure_connected()
-        df = pd.read_sql_query(
-            '''WITH tickerdistributions AS
+        df = df_from_sql(
+            """WITH tickerdistributions AS
                 (SELECT day, amount::double precision
                 FROM distributions
                 WHERE ticker = %(ticker_name)s)
@@ -106,29 +105,29 @@ class Ticker():
             WHERE (p.ticker IS NULL OR p.ticker = %(ticker_name)s)
             AND (%(from_day)s IS NULL OR m.day >= %(from_day)s)
             AND m.day <= %(today)s
-            ORDER BY m.day ASC;''',
-            con=db.conn,
+            ORDER BY m.day ASC;""",
             params={
-                'ticker_name': self.ticker_name,
-                'from_day': self.from_day,
-                'today': date.today()
+                "ticker_name": self.ticker_name,
+                "from_day": self.from_day,
+                "today": date.today(),
             },
-            index_col='day',
-            parse_dates=['day'])
+            index_col="day",
+            parse_dates=["day"],
+        )
 
-        df['price'].fillna(method='ffill', inplace=True)
-        df['change'] = (df['price'] / df['price'].shift(1)) - 1.0
-        first_price_idx = df['price'].first_valid_index()
-        df['distributions_from_start'] = df['distribution'].cumsum()
+        df["price"].fillna(method="ffill", inplace=True)
+        df["change"] = (df["price"] / df["price"].shift(1)) - 1.0
+        first_price_idx = df["price"].first_valid_index()
+        df["distributions_from_start"] = df["distribution"].cumsum()
         if first_price_idx:
-            df['change_from_start'] = \
-                (df['price'] / df['price'][first_price_idx]) - 1.0
-            df['yield_from_start'] = \
-                df['distributions_from_start'] / df['price'][first_price_idx]
+            df["change_from_start"] = (df["price"] / df["price"][first_price_idx]) - 1.0
+            df["yield_from_start"] = (
+                df["distributions_from_start"] / df["price"][first_price_idx]
+            )
         else:  # there are no valid prices
-            df['change_from_start'] = 0.0
-            df['yield_from_start'] = 0.0
-        df['returns'] = df['change_from_start'] + df['yield_from_start']
+            df["change_from_start"] = 0.0
+            df["yield_from_start"] = 0.0
+        df["returns"] = df["change_from_start"] + df["yield_from_start"]
 
         return df
 
@@ -137,4 +136,4 @@ class Ticker():
         if self.values.empty:
             return None
         else:
-            return self.values[(self.values.open)]['change'].std(axis=0)
+            return self.values[(self.values.open)]["change"].std(axis=0)
