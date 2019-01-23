@@ -1,11 +1,11 @@
 from datetime import date
 import pandas as pd
 
-from db import db
+from db.db import df_from_sql
 from util.determine_accounts import determine_accounts
 
 
-class Deposits():
+class Deposits:
     """DataFrame-based structure to keep track of investment deposits.
 
     Public methods:
@@ -17,9 +17,12 @@ class Deposits():
     """
 
     def amount(self, day):
-        """Return the amount deposited on the requested day. If no deposits on a date, return None rather than zero."""
+        """Return the amount deposited on the requested day.
+
+        If no deposits on a date, return None rather than zero.
+        """
         try:
-            return self.deposits['amount'][day]
+            return self.deposits["amount"][day]
         except KeyError:
             return None
 
@@ -35,23 +38,16 @@ class Deposits():
         return str(self.deposits)
 
     def _get_deposits(self, accounts, from_day):
-        db.ensure_connected()
-        _deposits = pd.read_sql_query(
-            '''SELECT SUM(total)::double precision AS amount, day
+        return df_from_sql(
+            """SELECT SUM(total)::double precision AS amount, day
             FROM transactions
             WHERE account = ANY(%(accounts)s)
                 AND (%(from_day)s IS NULL OR day >= %(from_day)s)
                 AND day <= %(today)s
                 AND txtype = 'deposit'
             GROUP BY day
-            ORDER BY day ASC;''',
-            con=db.conn,
-            params={
-                'accounts': accounts,
-                'from_day': from_day,
-                'today': date.today()
-            },
-            index_col='day',
-            parse_dates=['day'])
-
-        return _deposits
+            ORDER BY day ASC;""",
+            params={"accounts": accounts, "from_day": from_day, "today": date.today()},
+            index_col="day",
+            parse_dates=["day"],
+        )
