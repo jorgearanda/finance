@@ -2,11 +2,10 @@ import pandas as pd
 
 from components.position import Position
 from components.tickers import Tickers
-from db import db
 from util.determine_accounts import determine_accounts
 
 
-class Positions():
+class Positions:
     """DataFrame-based structure that wraps several Position objects
 
     Public methods:
@@ -33,8 +32,8 @@ class Positions():
         """Trigger weight calculations for all positions held in this object."""
         for _, position in self.positions.items():
             position.calc_weight(total_values)
-        self.weights = self._collect_feature('weight')
-        self.weights['Cash'] = 1 - self.weights.sum(axis=1)
+        self.weights = self._collect_feature("weight")
+        self.weights["Cash"] = 1 - self.weights.sum(axis=1)
 
     def __init__(self, accounts=None, from_day=None, tickers=None):
         self.accounts = determine_accounts(accounts)
@@ -42,20 +41,25 @@ class Positions():
             tickers = Tickers(from_day)
         self.ticker_names = tickers.ticker_names
         self.positions = {
-            name: Position(name, accounts=self.accounts, from_day=from_day, ticker=tickers.tickers[name])
+            name: Position(
+                name,
+                accounts=self.accounts,
+                from_day=from_day,
+                ticker=tickers.tickers[name],
+            )
             for name in self.ticker_names
         }
         if len(self.ticker_names) > 0:
-            self.units = self._collect_feature('units')
-            self.costs = self._collect_feature('cost')
-            self.costs_per_unit = self._collect_feature('cost_per_unit')
-            self.current_prices = self._collect_feature('current_price')
-            self.market_values = self._collect_feature('market_value')
-            self.open_profits = self._collect_feature('open_profit')
-            self.distributions = self._collect_feature('distributions')
-            self.distribution_returns = self._collect_feature('distribution_returns')
-            self.appreciation_returns = self._collect_feature('appreciation_returns')
-            self.total_returns = self._collect_feature('total_returns')
+            self.units = self._collect_feature("units")
+            self.costs = self._collect_feature("cost")
+            self.costs_per_unit = self._collect_feature("cost_per_unit")
+            self.current_prices = self._collect_feature("current_price")
+            self.market_values = self._collect_feature("market_value")
+            self.open_profits = self._collect_feature("open_profit")
+            self.distributions = self._collect_feature("distributions")
+            self.distribution_returns = self._collect_feature("distribution_returns")
+            self.appreciation_returns = self._collect_feature("appreciation_returns")
+            self.total_returns = self._collect_feature("total_returns")
 
     def __repr__(self):
         return str(self.positions)
@@ -65,6 +69,8 @@ class Positions():
 
     def _collect_feature(self, feature):
         """Extract a feature (a column) from several position objects and collect them in a single DataFrame."""
-        _feature = pd.concat([self.positions[name].values[feature] for name in self.ticker_names], axis=1)
+        _feature = pd.concat(
+            [self.positions[name].values[feature] for name in self.ticker_names], axis=1
+        )
         _feature.columns = self.ticker_names
         return _feature
