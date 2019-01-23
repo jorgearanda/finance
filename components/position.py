@@ -2,11 +2,11 @@ from datetime import date
 import pandas as pd
 
 from components.ticker import Ticker
-from db import db
+from db.db import df_from_sql
 from util.determine_accounts import determine_accounts
 
 
-class Position():
+class Position:
     """DataFrame-based structure of portfolio positions.
 
     Public methods:
@@ -43,83 +43,84 @@ class Position():
 
     def calc_weight(self, daily_totals):
         """Calculate the weight of this position as a part of the portfolio."""
-        self.values['weight'] = \
-            (self.values['market_value'] / daily_totals).fillna(0.00)
+        self.values["weight"] = (self.values["market_value"] / daily_totals).fillna(
+            0.00
+        )
 
     def units(self, day):
         """Return the number of units held."""
         try:
-            return self.values['units'][day]
+            return self.values["units"][day]
         except KeyError:
             return None
 
     def cost(self, day):
         """Return the total cost of the units held."""
         try:
-            return self.values['cost'][day]
+            return self.values["cost"][day]
         except KeyError:
             return None
 
     def cost_per_unit(self, day):
         """Return the average cost of the units held."""
         try:
-            return self.values['cost_per_unit'][day]
+            return self.values["cost_per_unit"][day]
         except KeyError:
             return None
 
     def current_price(self, day):
         """Return the position ticker's closing price."""
         try:
-            return self.values['current_price'][day]
+            return self.values["current_price"][day]
         except KeyError:
             return None
 
     def market_value(self, day):
         """Return the market value of the units held."""
         try:
-            return self.values['market_value'][day]
+            return self.values["market_value"][day]
         except KeyError:
             return None
 
     def open_profit(self, day):
         """Return the unrealized appreciation profits from the units held."""
         try:
-            return self.values['open_profit'][day]
+            return self.values["open_profit"][day]
         except KeyError:
             return None
 
     def distributions(self, day):
         """Return the cash received from distributions on this position."""
         try:
-            return self.values['distributions'][day]
+            return self.values["distributions"][day]
         except KeyError:
             return None
 
     def distribution_returns(self, day):
         """Return the returns from accumulated distributions."""
         try:
-            return self.values['distribution_returns'][day]
+            return self.values["distribution_returns"][day]
         except KeyError:
             return None
 
     def appreciation_returns(self, day):
         """Return the returns from unrealized appreciation profits."""
         try:
-            return self.values['appreciation_returns'][day]
+            return self.values["appreciation_returns"][day]
         except KeyError:
             return None
 
     def total_returns(self, day):
         """Return the total returns (distribution and appreciation)."""
         try:
-            return self.values['total_returns'][day]
+            return self.values["total_returns"][day]
         except KeyError:
             return None
 
     def weight(self, day):
         """Return the weight of the position as a percentage of portfolio."""
         try:
-            return self.values['weight'][day]
+            return self.values["weight"][day]
         except KeyError:
             return None
 
@@ -143,9 +144,8 @@ class Position():
 
     def _get_daily_values(self):
         """Create a DataFrame with daily position data."""
-        db.ensure_connected()
-        df = pd.read_sql_query(
-            '''WITH buys AS
+        df = df_from_sql(
+            """WITH buys AS
                 (SELECT SUM(units)::int AS units,
                     SUM(total)::double precision AS total, day
                 FROM transactions
@@ -170,28 +170,28 @@ class Position():
             LEFT JOIN dividends USING (day)
             WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s)
                 AND m.day <= %(today)s
-            ORDER BY m.day ASC;''',
-            con=db.conn,
+            ORDER BY m.day ASC;""",
             params={
-                'accounts': self.accounts,
-                'ticker_name': self.ticker_name,
-                'from_day': self.from_day,
-                'today': date.today()
+                "accounts": self.accounts,
+                "ticker_name": self.ticker_name,
+                "from_day": self.from_day,
+                "today": date.today(),
             },
-            index_col='day',
-            parse_dates=['day'])
+            index_col="day",
+            parse_dates=["day"],
+        )
 
-        df['units'] = df['units'].fillna(0).cumsum()
-        df['cost'] = df['cost'].fillna(0).cumsum()
-        df['distributions'] = df['distributions'].fillna(0).cumsum()
-        df['current_price'] = self._ticker.values['price']
-        df['cost_per_unit'] = df['cost'] / df['units']
-        df['market_value'] = df['units'] * df['current_price']
-        df['open_profit'] = df['market_value'] - df['cost']
-        df['appreciation_returns'] = df['open_profit'] / df['cost']
-        df['distribution_returns'] = df['distributions'] / df['cost']
-        df['total_returns'] = \
-            df['distribution_returns'].fillna(0) + \
-            df['appreciation_returns'].fillna(0)
+        df["units"] = df["units"].fillna(0).cumsum()
+        df["cost"] = df["cost"].fillna(0).cumsum()
+        df["distributions"] = df["distributions"].fillna(0).cumsum()
+        df["current_price"] = self._ticker.values["price"]
+        df["cost_per_unit"] = df["cost"] / df["units"]
+        df["market_value"] = df["units"] * df["current_price"]
+        df["open_profit"] = df["market_value"] - df["cost"]
+        df["appreciation_returns"] = df["open_profit"] / df["cost"]
+        df["distribution_returns"] = df["distributions"] / df["cost"]
+        df["total_returns"] = df["distribution_returns"].fillna(0) + df[
+            "appreciation_returns"
+        ].fillna(0)
 
         return df
