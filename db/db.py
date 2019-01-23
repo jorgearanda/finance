@@ -1,3 +1,4 @@
+import pandas as pd
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
@@ -5,7 +6,7 @@ import config
 
 
 conn = None
-_env = 'dev'
+_env = "dev"
 
 
 def connect(env=_env):
@@ -26,9 +27,10 @@ def connect(env=_env):
 
     global conn
     conn = psycopg2.connect(
-        database=config.db[env]['db'],
-        user=config.db[env]['user'],
-        cursor_factory=NamedTupleCursor)
+        database=config.db[env]["db"],
+        user=config.db[env]["user"],
+        cursor_factory=NamedTupleCursor,
+    )
     conn.autocommit = True
 
     return is_alive()
@@ -49,7 +51,7 @@ def ensure_connected(env=None):
         env = _env
 
     if conn is not None and env != _env:
-        raise Exception('Already connected to a different environment.')
+        raise Exception("Already connected to a different environment.")
 
     _env = env
     if is_alive():
@@ -62,3 +64,16 @@ def is_alive():
     """Report whether the database connection is alive."""
     global conn
     return conn is not None and not conn.closed
+
+
+def df_from_sql(sql, params, index_col, parse_dates):
+    """Return a dataframe from a SQL query.
+
+    Return a dataframe from a sql query, given the parameters provided.
+    This function just wraps around pandas.read_sql_query, but it is useful because
+    other components may use this without exposing the database connection to them.
+    """
+    ensure_connected()
+    return pd.read_sql_query(
+        sql=sql, con=conn, params=params, index_col=index_col, parse_dates=parse_dates
+    )
