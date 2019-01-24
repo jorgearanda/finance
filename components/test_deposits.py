@@ -16,7 +16,6 @@ class TestDeposits:
         d = Deposits(data=self._data)
 
         assert d is not None
-        assert "Empty" in d.__repr__()
         assert "Empty" in str(d)
 
     @pytest.mark.usefixtures("simple")
@@ -26,6 +25,6 @@ class TestDeposits:
 
         assert len(d.deposits) == 1
         assert d.deposits.loc[date(2017, 3, 2)]["amount"] == 10000
-        assert not d.amount(date(2017, 3, 1))
+        assert d.amount(date(2017, 3, 1)) == 0
         assert d.amount(date(2017, 3, 2)) == 10000
-        assert not d.amount(date(2017, 3, 3))
+        assert d.amount(date(2017, 3, 3)) == 0
