@@ -6,7 +6,7 @@ from db import db
 from util.determine_accounts import determine_accounts
 
 
-class Tickers():
+class Tickers:
     """DataFrame-based structure that wraps several Ticker objects
 
     Public methods:
@@ -32,19 +32,22 @@ class Tickers():
         """Return the price of ticker_name on the given day."""
         return self.tickers[ticker_name].price(day)
 
-    def __init__(self, accounts=None, from_day=None):
+    def __init__(self, accounts=None, from_day=None, data=None):
         """Instantiate a Tickers object, with dates starting on from_day."""
+        self._data = data
         self.accounts = determine_accounts(accounts)
         self.ticker_names = self._get_ticker_names(self.accounts, from_day)
         self.tickers = self._get_tickers(from_day)
         if len(self.ticker_names) > 0:
-            self.prices = self._collect_feature('price')
-            self.changes = self._collect_feature('change')
-            self.changes_from_start = self._collect_feature('change_from_start')
-            self.distributions = self._collect_feature('distribution')
-            self.distributions_from_start = self._collect_feature('distributions_from_start')
-            self.yields_from_start = self._collect_feature('yield_from_start')
-            self.returns = self._collect_feature('returns')
+            self.prices = self._collect_feature("price")
+            self.changes = self._collect_feature("change")
+            self.changes_from_start = self._collect_feature("change_from_start")
+            self.distributions = self._collect_feature("distribution")
+            self.distributions_from_start = self._collect_feature(
+                "distributions_from_start"
+            )
+            self.yields_from_start = self._collect_feature("yield_from_start")
+            self.returns = self._collect_feature("returns")
             self.volatilities = self._collect_volatilities()
             self.correlations = self._calc_correlations()
             self.market_day = self._collect_market_days()
@@ -60,25 +63,23 @@ class Tickers():
         db.ensure_connected()
         with db.conn.cursor() as cur:
             cur.execute(
-                '''SELECT DISTINCT(ticker) AS name
+                """SELECT DISTINCT(ticker) AS name
                 FROM assetprices
                 WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND day <= %(today)s
-                ORDER BY name ASC;''',
-                {'from_day': from_day, 'today': date.today()})
+                ORDER BY name ASC;""",
+                {"from_day": from_day, "today": date.today()},
+            )
             priced = [x.name for x in cur.fetchall()]
 
             cur.execute(
-                '''SELECT DISTINCT(target) AS name
+                """SELECT DISTINCT(target) AS name
                 FROM transactions
                 WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
                     AND day <= %(today)s
-                    AND account = ANY(%(accounts)s);''',
-                {
-                    'from_day': from_day,
-                    'today': date.today(),
-                    'accounts': accounts
-                })
+                    AND account = ANY(%(accounts)s);""",
+                {"from_day": from_day, "today": date.today(), "accounts": accounts},
+            )
             bought = [x.name for x in cur.fetchall()]
 
         all_names = list(set(priced).intersection(bought))
@@ -87,11 +88,15 @@ class Tickers():
 
     def _get_tickers(self, from_day):
         """Get all ticker objects."""
-        return {name: Ticker(name, from_day) for name in self.ticker_names}
+        return {
+            name: Ticker(name, from_day, data=self._data) for name in self.ticker_names
+        }
 
     def _collect_feature(self, feature):
         """Extract a feature (a column) from several position objects and collect them in a single DataFrame."""
-        _feature = pd.concat([self.tickers[name].values[feature] for name in self.ticker_names], axis=1)
+        _feature = pd.concat(
+            [self.tickers[name].values[feature] for name in self.ticker_names], axis=1
+        )
         _feature.columns = self.ticker_names
         return _feature
 
@@ -105,4 +110,4 @@ class Tickers():
 
     def _collect_market_days(self):
         """Extract the Series of open market days from a Ticker object."""
-        return self.tickers[self.ticker_names[0]].values['open']
+        return self.tickers[self.ticker_names[0]].values["open"]

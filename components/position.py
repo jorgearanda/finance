@@ -2,7 +2,6 @@ from datetime import date
 import pandas as pd
 
 from components.ticker import Ticker
-from db.db import df_from_sql
 from util.determine_accounts import determine_accounts
 
 
@@ -124,15 +123,18 @@ class Position:
         except KeyError:
             return None
 
-    def __init__(self, ticker_name, accounts=None, from_day=None, ticker=None):
+    def __init__(
+        self, ticker_name, accounts=None, from_day=None, ticker=None, data=None
+    ):
         """Instantiate a Position object."""
+        self._data = data
         self.ticker_name = ticker_name
         self.accounts = determine_accounts(accounts)
         self.from_day = from_day
         if ticker:
             self._ticker = ticker
         else:
-            self._ticker = Ticker(ticker_name, from_day)
+            self._ticker = Ticker(ticker_name, from_day, data=self._data)
 
         self.values = self._get_daily_values()
 
@@ -144,7 +146,7 @@ class Position:
 
     def _get_daily_values(self):
         """Create a DataFrame with daily position data."""
-        df = df_from_sql(
+        df = self._data.df_from_sql(
             """WITH buys AS
                 (SELECT SUM(units)::int AS units,
                     SUM(total)::double precision AS total, day

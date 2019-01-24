@@ -1,8 +1,6 @@
 from datetime import date
 import pandas as pd
 
-from db.db import df_from_sql
-
 
 class Ticker:
     """DataFrame-based structure of ticker pricing data.
@@ -78,8 +76,9 @@ class Ticker:
         except KeyError:
             return None
 
-    def __init__(self, ticker_name, from_day=None):
+    def __init__(self, ticker_name, from_day=None, data=None):
         """Instantiate a Ticker object."""
+        self._data = data
         self.ticker_name = ticker_name
         self.from_day = from_day
         self.values = self._get_daily_values()
@@ -93,7 +92,7 @@ class Ticker:
 
     def _get_daily_values(self):
         """Create a DataFrame with daily ticker data."""
-        df = df_from_sql(
+        df = self._data.df_from_sql(
             """WITH tickerdistributions AS
                 (SELECT day, amount::double precision
                 FROM distributions

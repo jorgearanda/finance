@@ -35,10 +35,11 @@ class Positions:
         self.weights = self._collect_feature("weight")
         self.weights["Cash"] = 1 - self.weights.sum(axis=1)
 
-    def __init__(self, accounts=None, from_day=None, tickers=None):
+    def __init__(self, accounts=None, from_day=None, tickers=None, data=None):
+        self._data = data
         self.accounts = determine_accounts(accounts)
         if not tickers:
-            tickers = Tickers(from_day)
+            tickers = Tickers(from_day, data=self._data)
         self.ticker_names = tickers.ticker_names
         self.positions = {
             name: Position(
@@ -46,6 +47,7 @@ class Positions:
                 accounts=self.accounts,
                 from_day=from_day,
                 ticker=tickers.tickers[name],
+                data=self._data,
             )
             for name in self.ticker_names
         }

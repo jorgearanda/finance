@@ -7,6 +7,7 @@ from components.positions import Positions
 from components.tickers import Tickers
 import config
 from db import db
+from db.data import Data
 from util.determine_accounts import determine_accounts
 from util.relative_rate import relative_rate
 from util.update_prices import update_prices
@@ -105,6 +106,7 @@ class Portfolio:
 
     def __init__(self, accounts=None, from_day=None, update=True, verbose=True):
         """Instantiate a Portfolio object."""
+        self._data = Data()
         self.accounts = determine_accounts(accounts)
         if from_day is not None:
             self.from_day = from_day
@@ -112,9 +114,11 @@ class Portfolio:
             self.from_day = self._get_start_date(self.accounts)
         if update:
             update_prices(verbose)
-        self.deposits = Deposits(self.accounts, self.from_day)
-        self.tickers = Tickers(self.accounts, self.from_day)
-        self.positions = Positions(self.accounts, self.from_day, self.tickers)
+        self.deposits = Deposits(self.accounts, self.from_day, self._data)
+        self.tickers = Tickers(self.accounts, self.from_day, data=self._data)
+        self.positions = Positions(
+            self.accounts, self.from_day, self.tickers, data=self._data
+        )
         self.by_day = self._calc_daily()
         self.by_month = self._calc_monthly()
         self.by_year = self._calc_yearly()

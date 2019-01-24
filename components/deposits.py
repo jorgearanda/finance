@@ -1,7 +1,6 @@
 from datetime import date
 import pandas as pd
 
-from db.db import df_from_sql
 from util.determine_accounts import determine_accounts
 
 
@@ -26,8 +25,9 @@ class Deposits:
         except KeyError:
             return None
 
-    def __init__(self, accounts=None, from_day=None):
+    def __init__(self, accounts=None, from_day=None, data=None):
         """Instantiate a Deposits object."""
+        self._data = data
         self.accounts = determine_accounts(accounts)
         self.deposits = self._get_deposits(self.accounts, from_day)
 
@@ -38,7 +38,7 @@ class Deposits:
         return str(self.deposits)
 
     def _get_deposits(self, accounts, from_day):
-        return df_from_sql(
+        return self._data.df_from_sql(
             """SELECT SUM(total)::double precision AS amount, day
             FROM transactions
             WHERE account = ANY(%(accounts)s)
