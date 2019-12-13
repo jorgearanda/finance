@@ -6,6 +6,7 @@ grequests
 html5lib
 ipykernel
 Jinja2
+jupyterlab
 matplotlib
 nose
 numpy
