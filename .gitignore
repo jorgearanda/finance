@@ -7,3 +7,4 @@ populate/
 notebooks/Untitled.ipynb
 notebooks/Sandbox.ipynb
 .pytest_cache/
+.vscode/
