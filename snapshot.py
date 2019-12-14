@@ -119,13 +119,13 @@ def snapshot(args):
         for key in years.index:
             rep.append(
                 f"{str(key)[:4]}  "
-                + f"{years.ix[key]['total_value']:12,.2f}"
-                + f"{years.ix[key]['profit']:12,.2f}"
-                + f"{years.ix[key]['twrr'] * 100:8,.2f}%"
-                + f"{years.ix[key]['mwrr'] * 100:8,.2f}%"
-                + f"{years.ix[key]['year_profit']:12,.2f}"
-                + f"{years.ix[key]['year_twrr'] * 100:8,.2f}%"
-                + f"{years.ix[key]['year_mwrr'] * 100:8,.2f}%"
+                + f"{years.loc[key]['total_value']:12,.2f}"
+                + f"{years.loc[key]['profit']:12,.2f}"
+                + f"{years.loc[key]['twrr'] * 100:8,.2f}%"
+                + f"{years.loc[key]['mwrr'] * 100:8,.2f}%"
+                + f"{years.loc[key]['year_profit']:12,.2f}"
+                + f"{years.loc[key]['year_twrr'] * 100:8,.2f}%"
+                + f"{years.loc[key]['year_mwrr'] * 100:8,.2f}%"
             )
 
     if args["--months"]:
@@ -139,22 +139,22 @@ def snapshot(args):
         for key in months.index:
             rep.append(
                 f"{str(key)[:7]}  "
-                + f"{months.ix[key]['total_value']:12,.2f}"
-                + f"{months.ix[key]['profit']:12,.2f}"
-                + f"{months.ix[key]['twrr'] * 100:8,.2f}%"
-                + f"{months.ix[key]['mwrr'] * 100:8,.2f}%"
-                + f"{months.ix[key]['month_profit']:12,.2f}"
-                + f"{months.ix[key]['month_twrr'] * 100:8,.2f}%"
-                + f"{months.ix[key]['month_mwrr'] * 100:8,.2f}%"
+                + f"{months.loc[key]['total_value']:12,.2f}"
+                + f"{months.loc[key]['profit']:12,.2f}"
+                + f"{months.loc[key]['twrr'] * 100:8,.2f}%"
+                + f"{months.loc[key]['mwrr'] * 100:8,.2f}%"
+                + f"{months.loc[key]['month_profit']:12,.2f}"
+                + f"{months.loc[key]['month_twrr'] * 100:8,.2f}%"
+                + f"{months.loc[key]['month_mwrr'] * 100:8,.2f}%"
             )
 
     if args["--positions"]:
         rep.append("")
         rep.append("Ticker                Price           Value      Weight")
-        weights = p.positions.weights.ix[-1]
-        values = p.positions.market_values.ix[-1]
-        prices = p.tickers.prices.ix[-1]
-        day_returns = p.tickers.changes.ix[-1]
+        weights = p.positions.weights.iloc[-1]
+        values = p.positions.market_values.iloc[-1]
+        prices = p.tickers.prices.iloc[-1]
+        day_returns = p.tickers.changes.iloc[-1]
         for position in weights.index:
             if position != "Cash":
                 rep.append(

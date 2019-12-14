@@ -1,15 +1,16 @@
 from decimal import Decimal
-from nose.tools import assert_raises
 import pytest
 from util.cagr import cagr
 
 
 def test_cagr_missing_period_raises_exception():
-    assert_raises(Exception, cagr, 1000, 1000)
+    with pytest.raises(Exception):
+        cagr(1000, 1000)
 
 
 def test_cagr_zero_initial_value_raises_exception():
-    assert_raises(Exception, cagr, 0, 1000, years=1)
+    with pytest.raises(Exception):
+        cagr(0, 1000, years=1)
 
 
 def test_cagr_instant():

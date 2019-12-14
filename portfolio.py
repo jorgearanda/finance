@@ -69,40 +69,40 @@ class Portfolio:
 
     def val(self, prop, day):
         """Return the value of property `prop` on day `day`."""
-        return self.by_day.ix[day][prop]
+        return self.by_day[prop][day]
 
     def latest(self):
         if len(self.by_day.index) > 0:
-            return self.by_day.ix[-1]
+            return self.by_day.iloc[-1]
         else:
             return None
 
     def current_month(self):
         if len(self.by_month.index) > 0:
-            return self.by_month.ix[-1]
+            return self.by_month.iloc[-1]
         else:
             return None
 
     def previous_month(self):
         if len(self.by_month.index) > 1:
-            return self.by_month.ix[-2]
+            return self.by_month.iloc[-2]
         else:
             return None
 
     def current_year(self):
         if len(self.by_year.index) > 0:
-            return self.by_year.ix[-1]
+            return self.by_year.iloc[-1]
         else:
             return None
 
     def previous_year(self):
         if len(self.by_year.index) > 1:
-            return self.by_year.ix[-2]
+            return self.by_year.iloc[-2]
         else:
             return None
 
     def allocations(self):
-        return self.positions.weights.ix[-1]
+        return self.positions.weights.iloc[-1]
 
     def __init__(self, accounts=None, from_day=None, update=True, verbose=True):
         """Instantiate a Portfolio object."""
@@ -202,7 +202,7 @@ class Portfolio:
             return pd.DataFrame()
         df = self.by_day.asfreq("M")
         if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
-            df = df.append(self.by_day.ix[-1])
+            df = df.append(self.by_day.iloc[-1])
         df = df.drop(
             ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
         )
@@ -219,7 +219,7 @@ class Portfolio:
             return pd.DataFrame()
         df = self.by_day.asfreq("A")
         if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
-            df = df.append(self.by_day.ix[-1])
+            df = df.append(self.by_day.iloc[-1])
         df = df.drop(
             ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
         )

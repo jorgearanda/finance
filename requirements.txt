@@ -9,7 +9,6 @@ ipykernel
 Jinja2
 jupyterlab
 matplotlib
-nose
 numpy
 pandas
 psycopg2-binary
