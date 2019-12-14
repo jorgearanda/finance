@@ -1,4 +1,5 @@
 beautifulsoup4
+black
 coverage
 docopt
 freezegun
@@ -12,6 +13,7 @@ nose
 numpy
 pandas
 psycopg2-binary
+pytest
 pytest-cov
 pytest-watch
 requests
