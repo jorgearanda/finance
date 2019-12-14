@@ -1,5 +1,6 @@
 from decimal import Decimal
-from nose.tools import assert_almost_equals, assert_raises
+from nose.tools import assert_raises
+import pytest
 from util.cagr import cagr
 
 
@@ -20,11 +21,11 @@ def test_cagr_zero():
 
 
 def test_cagr_positive():
-    assert_almost_equals(cagr(1000, 1100, years=1), Decimal(0.1))
+    pytest.approx(cagr(1000, 1100, years=1), Decimal(0.1))
 
 
 def test_cagr_negative():
-    assert_almost_equals(cagr(1000, 900, years=1), Decimal(-0.1))
+    pytest.approx(cagr(1000, 900, years=1), Decimal(-0.1))
 
 
 def test_cagr_with_months():
@@ -40,11 +41,11 @@ def test_cagr_with_days():
 
 
 def test_cagr_part_of_a_year():
-    assert_almost_equals(cagr(1000, 1100, years=0.5), Decimal(0.21))
-    assert_almost_equals(cagr(1000, 1100, months=6), Decimal(0.21))
+    pytest.approx(cagr(1000, 1100, years=0.5), Decimal(0.21))
+    pytest.approx(cagr(1000, 1100, months=6), Decimal(0.21))
 
 
 def test_cagr_many_years():
-    assert_almost_equals(cagr(1000, 2593.7424601, years=10), Decimal(0.1))
-    assert_almost_equals(cagr(1000, 2593.7424601, months=120), Decimal(0.1))
-    assert_almost_equals(cagr(1000, 2593.7424601, days=3650), Decimal(0.1))
+    pytest.approx(cagr(1000, 2593.7424601, years=10), Decimal(0.1))
+    pytest.approx(cagr(1000, 2593.7424601, months=120), Decimal(0.1))
+    pytest.approx(cagr(1000, 2593.7424601, days=3650), Decimal(0.1))
