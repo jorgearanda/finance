@@ -158,9 +158,9 @@ def snapshot(args):
         for position in weights.index:
             if position != "Cash":
                 rep.append(
-                    f"{position:6}:      "
+                    f"{position:6}:     "
                     + f"{prices[position]:6,.2f} "
-                    + f"({day_returns[position] * 100:5,.2f}%)   "
+                    + f"({day_returns[position] * 100:6,.2f}%)   "
                     + f"{values[position]:12,.2f}   "
                     + f"{weights[position] * 100:8,.2f}%"
                 )
