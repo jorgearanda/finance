@@ -96,7 +96,7 @@ def _update_prices_for_ticker(symbol, lines):
                     print(f"  + {day}:  -.-- -> {close:.2f}")
             else:
                 old = cur.fetchone().close
-                if not math.isclose(float(old), close, abs_tol=0.005):
+                if not math.isclose(float(old), close, abs_tol=0.0051):
                     cur.execute(
                         """UPDATE assetprices
                         SET ask = %(close)s, bid = %(close)s, close = %(close)s
