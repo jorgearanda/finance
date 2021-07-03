@@ -51,7 +51,10 @@ def _get_tickers():
 def _get_cookie_and_crumb(symbol):
     """Get cookie and crumb for further calls."""
     url = f"https://finance.yahoo.com/quote/{symbol}/history?p={symbol}"
-    r = requests.get(url, timeout=5.0)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+    }
+    r = requests.get(url, headers=headers, timeout=5.0)
     cookie = {"B": r.cookies["B"]}
     content = r.content.decode("unicode-escape")
     match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
