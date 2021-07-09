@@ -1,42 +1,35 @@
 import calendar
-from datetime import date, datetime as dt, timedelta
 import grequests
 import math
 import re
 import requests
 
+from datetime import date, datetime as dt, timedelta
+
 from db import db
 
 verbose = False
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
+"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+TIMEOUT = 5.0  # seconds
 
 
 def update_prices(verbosity=False):
     global verbose
     verbose = verbosity
     if verbose:
-        print("===Starting price update utility===")
-    cookie = None
-    crumb = None
-    db.connect()
-    tickers = _get_tickers()
-    if len(tickers) == 0:
-        return
-
-    if verbose:
-        print("* Preparing queries")
-    cookie, crumb = _get_cookie_and_crumb(tickers[0].name)
-    reqs = _create_ticker_requests(tickers, cookie, crumb)
-    for res in grequests.map(reqs):
+        print("===Updating prices===")
+    for res in _ticker_data():
         symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
         quote_lines = res.text.split("\n")[1:]
         _update_prices_for_ticker(symbol, quote_lines)
-
     if verbose:
-        print("===Finishing price update utility===\n")
+        print("===Finished updating prices===\n")
 
 
 def _get_tickers():
     """Get all the tickers to poll from the database."""
+    db.ensure_connected()
     with db.conn.cursor() as cur:
         cur.execute(
             """
@@ -51,12 +44,9 @@ def _get_tickers():
 def _get_cookie_and_crumb(symbol):
     """Get cookie and crumb for further calls."""
     url = f"https://finance.yahoo.com/quote/{symbol}/history?p={symbol}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-    }
-    r = requests.get(url, headers=headers, timeout=5.0)
-    cookie = {"B": r.cookies["B"]}
-    content = r.content.decode("unicode-escape")
+    req = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT)
+    cookie = {"B": req.cookies["B"]}
+    content = req.content.decode("unicode-escape")
     match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
     crumb = match.group(1)
 
@@ -66,7 +56,7 @@ def _get_cookie_and_crumb(symbol):
 def _update_prices_for_ticker(symbol, lines):
     """Use historical data in `lines` to populate prices table."""
     if verbose:
-        print(f"* Querying {symbol}")
+        print(f"* Updating {symbol}")
     for line in lines:
         if len(line) == 0:
             continue
@@ -110,7 +100,11 @@ def _update_prices_for_ticker(symbol, lines):
                         print(f"  + {day}: {old} -> {close:.2f}")
 
 
-def _create_ticker_requests(tickers, cookie, crumb):
+def _ticker_data():
+    if verbose:
+        print("* Preparing queries")
+    tickers = _get_tickers()
+    cookie, crumb = _get_cookie_and_crumb(tickers[0].name)
     ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
     ts_to = calendar.timegm((date.today() + timedelta(days=1)).timetuple())
     base = "https://query1.finance.yahoo.com/v7/finance/download/"
@@ -119,7 +113,12 @@ def _create_ticker_requests(tickers, cookie, crumb):
         + f"interval=1d&events=historical&crumb={crumb}"
     )
 
-    return (
-        grequests.get(base + ticker.name + params, cookies=cookie, timeout=5.0)
+    return grequests.map(
+        grequests.get(
+            base + ticker.name + params,
+            headers={"User-Agent": USER_AGENT},
+            cookies=cookie,
+            timeout=TIMEOUT,
+        )
         for ticker in tickers
     )
