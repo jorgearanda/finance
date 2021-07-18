@@ -1,6 +1,5 @@
 from datetime import date
 import pandas as pd
-import pytest
 from unittest.mock import patch
 
 from components.deposits import Deposits

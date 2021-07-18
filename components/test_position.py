@@ -1,7 +1,6 @@
 from datetime import datetime as dt
 from freezegun import freeze_time
 import math
-import pandas as pd
 from pytest import approx
 
 from components.position import Position

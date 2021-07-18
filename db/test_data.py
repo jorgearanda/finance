@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime
 import pytest
 
 from db.data import Data
@@ -31,4 +31,4 @@ class TestData:
         df = d.df_from_sql(sql, params, index_col, parse_dates)
 
         assert len(df) == 1
-        assert df.loc[date(2017, 3, 2)]["amount"] == 10000
+        assert df.loc[datetime(2017, 3, 2)]["amount"] == 10000
