@@ -42,13 +42,11 @@ def _update_prices_for_ticker(symbol, lines, updater):
     """Use historical data in `lines` to populate prices table."""
     if verbose:
         print(f"* Updating {symbol}")
-    prices = {}
-    for line in lines:
-        if len(line) == 0:
-            continue
-        day = updater.day_from_price_line(line)
-        close = updater.closing_price_from_price_line(line)
-        prices[day] = close
+    prices = {
+        updater.day_from_price_line(line): updater.closing_price_from_price_line(line)
+        for line in lines
+        if len(line) > 0
+    }
 
     for day, close in prices.items():
         if close is None:
