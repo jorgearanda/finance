@@ -45,14 +45,12 @@ def _update_prices_for_ticker(symbol, lines, updater):
     for line in lines:
         if len(line) == 0:
             continue
-        values = line.split(",")
         day = updater.day_from_price_line(line)
-        close = values[4]
-        if close == "null":
+        close = updater.closing_price_from_price_line(line)
+        if close is None:
             if verbose:
                 print(f"  x {day}: -null- (skipping)")
             continue
-        close = float(close)
 
         with db.conn.cursor() as cur:
             cur.execute(
@@ -137,3 +135,7 @@ class YahooTickerScraper:
 
     def day_from_price_line(self, line):
         return dt.strptime(line.split(",")[0], "%Y-%m-%d").date()
+
+    def closing_price_from_price_line(self, line):
+        closing_price = line.split(",")[4]
+        return float(closing_price) if closing_price != "null" else None
