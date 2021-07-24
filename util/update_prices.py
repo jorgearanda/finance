@@ -19,7 +19,7 @@ def update_prices(verbosity=False):
         print("===Updating prices===")
     for res in updater.get_ticker_requests(symbols=ticker_symbols()):
         symbol, price_lines = updater.extract_price_lines(res)
-        _update_prices_for_ticker(symbol, price_lines)
+        _update_prices_for_ticker(symbol, price_lines, updater)
     if verbose:
         print("===Finished updating prices===\n")
 
@@ -38,7 +38,7 @@ def ticker_symbols():
         return [ticker.name for ticker in cur.fetchall()]
 
 
-def _update_prices_for_ticker(symbol, lines):
+def _update_prices_for_ticker(symbol, lines, updater):
     """Use historical data in `lines` to populate prices table."""
     if verbose:
         print(f"* Updating {symbol}")
@@ -46,7 +46,7 @@ def _update_prices_for_ticker(symbol, lines):
         if len(line) == 0:
             continue
         values = line.split(",")
-        day = dt.strptime(values[0], "%Y-%m-%d").date()
+        day = updater.day_from_price_line(line)
         close = values[4]
         if close == "null":
             if verbose:
@@ -134,3 +134,6 @@ class YahooTickerScraper:
         symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
         price_lines = res.text.split("\n")[1:]
         return symbol, price_lines
+
+    def day_from_price_line(self, line):
+        return dt.strptime(line.split(",")[0], "%Y-%m-%d").date()
