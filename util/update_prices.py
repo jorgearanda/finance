@@ -9,25 +9,22 @@ from datetime import date, datetime as dt, timedelta
 from db import db
 
 verbose = False
-USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
-"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-TIMEOUT = 5.0  # seconds
 
 
 def update_prices(verbosity=False):
     global verbose
     verbose = verbosity
+    updater = YahooTickerScraper(verbose=verbose)
     if verbose:
         print("===Updating prices===")
-    for res in _ticker_data():
-        symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
-        quote_lines = res.text.split("\n")[1:]
-        _update_prices_for_ticker(symbol, quote_lines)
+    for res in updater.get_ticker_requests(symbols=ticker_symbols()):
+        symbol, price_lines = updater.extract_price_lines(res)
+        _update_prices_for_ticker(symbol, price_lines)
     if verbose:
         print("===Finished updating prices===\n")
 
 
-def _get_tickers():
+def ticker_symbols():
     """Get all the tickers to poll from the database."""
     db.ensure_connected()
     with db.conn.cursor() as cur:
@@ -38,19 +35,7 @@ def _get_tickers():
             WHERE class != 'Domestic Cash';"""
         )
 
-        return cur.fetchall()
-
-
-def _get_cookie_and_crumb(symbol):
-    """Get cookie and crumb for further calls."""
-    url = f"https://finance.yahoo.com/quote/{symbol}/history?p={symbol}"
-    req = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT)
-    cookie = {"B": req.cookies["B"]}
-    content = req.content.decode("unicode-escape")
-    match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
-    crumb = match.group(1)
-
-    return cookie, crumb
+        return [ticker.name for ticker in cur.fetchall()]
 
 
 def _update_prices_for_ticker(symbol, lines):
@@ -100,25 +85,52 @@ def _update_prices_for_ticker(symbol, lines):
                         print(f"  + {day}: {old} -> {close:.2f}")
 
 
-def _ticker_data():
-    if verbose:
-        print("* Preparing queries")
-    tickers = _get_tickers()
-    cookie, crumb = _get_cookie_and_crumb(tickers[0].name)
-    ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
-    ts_to = calendar.timegm((date.today() + timedelta(days=1)).timetuple())
-    base = "https://query1.finance.yahoo.com/v7/finance/download/"
-    params = (
-        f"?period1={ts_from}&period2={ts_to}&"
-        + f"interval=1d&events=historical&crumb={crumb}"
-    )
+class YahooTickerScraper:
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        self.auth_url = "https://finance.yahoo.com/quote/VAB.TO/history?p=VAB.TO"
+        self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+        self.timeout = 5  # seconds
+        self.cookie, self.crumb = self.get_cookie_and_crumb()
 
-    return grequests.map(
-        grequests.get(
-            base + ticker.name + params,
-            headers={"User-Agent": USER_AGENT},
-            cookies=cookie,
-            timeout=TIMEOUT,
+    def get_cookie_and_crumb(self):
+        if self.verbose:
+            print("* Getting cookie and crumb")
+        req = requests.get(
+            self.auth_url,
+            headers={"User-Agent": self.user_agent},
+            timeout=self.timeout,
         )
-        for ticker in tickers
-    )
+        cookie = {"B": req.cookies["B"]}
+        content = req.content.decode("unicode-escape")
+        match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
+        crumb = match.group(1)
+
+        return cookie, crumb
+
+    def get_ticker_requests(self, symbols):
+        if verbose:
+            print("* Getting tickers")
+        ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
+        ts_to = calendar.timegm((date.today() + timedelta(days=1)).timetuple())
+        base = "https://query1.finance.yahoo.com/v7/finance/download/"
+        params = (
+            f"?period1={ts_from}&period2={ts_to}&"
+            + f"interval=1d&events=historical&crumb={self.crumb}"
+        )
+
+        return grequests.map(
+            grequests.get(
+                base + symbol + params,
+                headers={"User-Agent": self.user_agent},
+                cookies=self.cookie,
+                timeout=self.timeout,
+            )
+            for symbol in symbols
+        )
+
+    def extract_price_lines(self, res):
+        symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
+        price_lines = res.text.split("\n")[1:]
+        return symbol, price_lines
