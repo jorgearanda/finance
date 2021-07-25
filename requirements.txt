@@ -1,12 +1,8 @@
-beautifulsoup4
 black
 coverage
 docopt
 freezegun
 grequests
-html5lib
-ipykernel
-Jinja2
 jupyterlab
 matplotlib
 numpy
@@ -16,5 +12,4 @@ pytest
 pytest-cov
 pytest-watch
 requests
-scipy
 seaborn
