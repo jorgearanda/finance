@@ -83,8 +83,9 @@ class YahooTickerScraper:
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
     timeout = 5  # seconds
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, look_back_days=30):
         self.verbose = verbose
+        self.look_back_days = look_back_days
         self.cookie, self.crumb = self._get_cookie_and_crumb()
 
     def get_ticker_prices(self, symbols):
@@ -119,23 +120,25 @@ class YahooTickerScraper:
     def _get_ticker_requests(self, symbols):
         if verbose:
             print("* Getting tickers")
-        ts_from = calendar.timegm((date.today() - timedelta(days=30)).timetuple())
-        ts_to = calendar.timegm((date.today() + timedelta(days=1)).timetuple())
-        base = "https://query1.finance.yahoo.com/v7/finance/download/"
-        params = (
-            f"?period1={ts_from}&period2={ts_to}&"
-            + f"interval=1d&events=historical&crumb={self.crumb}"
-        )
-
         return grequests.map(
             grequests.get(
-                base + symbol + params,
+                f"https://query1.finance.yahoo.com/v7/finance/download/{symbol}"
+                f"?period1={self._ts_from()}&period2={self._ts_to()}&"
+                f"interval=1d&events=historical&crumb={self.crumb}",
                 headers={"User-Agent": self.user_agent},
                 cookies=self.cookie,
                 timeout=self.timeout,
             )
             for symbol in symbols
         )
+
+    def _ts_from(self):
+        return calendar.timegm(
+            (date.today() - timedelta(days=self.look_back_days)).timetuple()
+        )
+
+    def _ts_to(self):
+        return calendar.timegm((date.today() + timedelta(days=1)).timetuple())
 
     def _extract_prices(self, res):
         symbol, price_lines = self._extract_price_lines(res)
