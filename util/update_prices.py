@@ -78,15 +78,22 @@ def record_prices(symbol, prices):
 
 
 class YahooTickerScraper:
+    auth_url = "https://finance.yahoo.com/quote/VAB.TO/history?p=VAB.TO"
+    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+    timeout = 5  # seconds
+
     def __init__(self, verbose=False):
         self.verbose = verbose
-        self.auth_url = "https://finance.yahoo.com/quote/VAB.TO/history?p=VAB.TO"
-        self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-        self.timeout = 5  # seconds
         self.cookie, self.crumb = self._get_cookie_and_crumb()
 
     def get_ticker_prices(self, symbols):
+        """
+        Fetch price data from Yahoo for the symbols requested.
+
+        Returns a dictionary with symbol keys and price values
+        (in the form of nested day: price dictionaries).
+        """
         responses = self._get_ticker_requests(symbols)
         tickers = {}
         for res in responses:
