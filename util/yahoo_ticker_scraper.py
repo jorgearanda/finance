@@ -71,21 +71,22 @@ class YahooTickerScraper:
 
     def _extract_prices(self, res):
         symbol, price_lines = self._extract_price_lines(res)
-        prices = {
-            self._day_from_price_line(line): self._closing_price_from_price_line(line)
-            for line in price_lines
-            if len(line) > 0
-        }
+        prices = {line.day: line.price for line in price_lines}
         return symbol, prices
 
     def _extract_price_lines(self, res):
         symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
-        price_lines = res.text.split("\n")[1:]
+        price_lines = [
+            ClosingPrice(symbol, line)
+            for line in res.text.split("\n")[1:]
+            if len(line) > 0
+        ]
         return symbol, price_lines
 
-    def _day_from_price_line(self, line):
-        return dt.strptime(line.split(",")[0], "%Y-%m-%d").date()
 
-    def _closing_price_from_price_line(self, line):
+class ClosingPrice:
+    def __init__(self, symbol, line):
+        self.symbol = symbol
+        self.day = dt.strptime(line.split(",")[0], "%Y-%m-%d").date()
         closing_price = line.split(",")[4]
-        return float(closing_price) if closing_price != "null" else None
+        self.price = float(closing_price) if closing_price != "null" else None
