@@ -1,7 +1,7 @@
 import math
 
 from db import db
-from util.yahoo_ticker_scraper import YahooTickerScraper
+from util.yahoo_scraper import YahooScraper
 
 verbose = False
 
@@ -11,7 +11,7 @@ def update_prices(verbosity=False):
     verbose = verbosity
     if verbose:
         print("===Updating prices===")
-    scraper = YahooTickerScraper(verbose=verbose)
+    scraper = YahooScraper(verbose=verbose)
     for symbol, prices in scraper.get_ticker_prices(symbols=ticker_symbols()).items():
         record_prices(symbol, prices)
     if verbose:

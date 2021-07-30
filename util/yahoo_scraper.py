@@ -6,7 +6,7 @@ import requests
 from datetime import date, datetime as dt, timedelta
 
 
-class YahooTickerScraper:
+class YahooScraper:
     auth_url = "https://finance.yahoo.com/quote/VAB.TO/history?p=VAB.TO"
     user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
