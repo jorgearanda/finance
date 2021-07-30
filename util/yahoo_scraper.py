@@ -79,16 +79,18 @@ class YahooScraper:
     def _extract_price_lines(self, res):
         symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
         price_lines = [
-            ClosingPrice(symbol, line)
-            for line in res.text.split("\n")[1:]
-            if len(line) > 0
+            Quote(symbol, line) for line in res.text.split("\n")[1:] if len(line) > 0
         ]
         return symbol, price_lines
 
 
-class ClosingPrice:
+class Quote:
     def __init__(self, symbol, line):
+        """
+        Yahoo result lines are CSVs with the format:
+        Date,Open,High,Low,Close,Adj Close,Volume
+        """
         self.symbol = symbol
         self.day = dt.strptime(line.split(",")[0], "%Y-%m-%d").date()
-        closing_price = line.split(",")[4]
-        self.price = float(closing_price) if closing_price != "null" else None
+        price = line.split(",")[4]
+        self.price = float(price) if price != "null" else None
