@@ -15,7 +15,7 @@ class YahooTickerScraper:
     def __init__(self, verbose=False, look_back_days=30):
         self.verbose = verbose
         self.look_back_days = look_back_days
-        self.cookie, self.crumb = self._get_cookie_and_crumb()
+        self.cookie = self.crumb = None
 
     def get_ticker_prices(self, symbols):
         """
@@ -24,6 +24,8 @@ class YahooTickerScraper:
         Returns a dictionary with symbol keys and price values
         (in the form of nested day: price dictionaries).
         """
+        if self.cookie is None:
+            self.cookie, self.crumb = self._get_cookie_and_crumb()
         responses = self._get_ticker_requests(symbols)
         tickers = {}
         for res in responses:
