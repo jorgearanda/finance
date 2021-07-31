@@ -17,21 +17,19 @@ class YahooScraper:
         self.look_back_days = look_back_days
         self.cookie = self.crumb = None
 
-    def get_ticker_prices(self, symbols):
+    def get_quotes(self, symbols):
         """
-        Fetch price data from Yahoo for the symbols requested.
+        Fetch price quotes from Yahoo for the symbols requested.
 
-        Returns a dictionary with symbol keys and price values
-        (in the form of nested day: price dictionaries).
+        Returns a list of Quote objects with symbol, day, and price attributes.
         """
         if self.cookie is None:
             self.cookie, self.crumb = self._get_cookie_and_crumb()
-        responses = self._get_ticker_requests(symbols)
-        tickers = {}
+        responses = self._fetch_quotes(symbols)
+        quotes = []
         for res in responses:
-            symbol, prices = self._extract_prices(res)
-            tickers[symbol] = prices
-        return tickers
+            quotes.extend(self._parse_quotes(res))
+        return quotes
 
     def _get_cookie_and_crumb(self):
         if self.verbose:
@@ -48,9 +46,9 @@ class YahooScraper:
 
         return cookie, crumb
 
-    def _get_ticker_requests(self, symbols):
+    def _fetch_quotes(self, symbols):
         if self.verbose:
-            print("* Getting tickers")
+            print("* Fetching quotes")
         return grequests.map(
             grequests.get(
                 f"https://query1.finance.yahoo.com/v7/finance/download/{symbol}"
@@ -71,17 +69,14 @@ class YahooScraper:
     def _ts_to(self):
         return calendar.timegm((date.today() + timedelta(days=1)).timetuple())
 
-    def _extract_prices(self, res):
-        symbol, price_lines = self._extract_price_lines(res)
-        prices = {line.day: line.price for line in price_lines}
-        return symbol, prices
-
-    def _extract_price_lines(self, res):
-        symbol = re.search(r"download/(.*)\?", res.request.url).group(1)
-        price_lines = [
+    def _parse_quotes(self, res):
+        symbol = self._symbol_from_url(res)
+        return [
             Quote(symbol, line) for line in res.text.split("\n")[1:] if len(line) > 0
         ]
-        return symbol, price_lines
+
+    def _symbol_from_url(self, res):
+        return re.search(r"download/(.*)\?", res.request.url).group(1)
 
 
 class Quote:

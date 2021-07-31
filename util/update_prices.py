@@ -11,9 +11,7 @@ def update_prices(verbosity=False):
     verbose = verbosity
     if verbose:
         print("===Updating prices===")
-    scraper = YahooScraper(verbose=verbose)
-    for symbol, prices in scraper.get_ticker_prices(symbols=ticker_symbols()).items():
-        record_prices(symbol, prices)
+    record_quotes(YahooScraper(verbose=verbose).get_quotes(symbols=ticker_symbols()))
     if verbose:
         print("===Finished updating prices===\n")
 
@@ -32,10 +30,14 @@ def ticker_symbols():
         return [ticker.name for ticker in cur.fetchall()]
 
 
-def record_prices(symbol, prices):
-    if verbose:
-        print(f"* Updating {symbol}")
-    for day, close in prices.items():
+def record_quotes(quotes):
+    symbol = None
+    for quote in quotes:
+        if symbol != quote.symbol and verbose:
+            print(f"* Updating {quote.symbol}")
+        symbol = quote.symbol
+        day = quote.day
+        close = quote.price
         if close is None:
             if verbose:
                 print(f"  x {day}: -null- (skipping)")
