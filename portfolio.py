@@ -10,7 +10,7 @@ from db import db
 from db.data import Data
 from util.determine_accounts import determine_accounts
 from util.relative_rate import relative_rate
-from util.update_prices import update_prices
+from util.price_updater import PriceUpdater
 
 
 class Portfolio:
@@ -113,7 +113,7 @@ class Portfolio:
         else:
             self.from_day = self._get_start_date(self.accounts)
         if update:
-            update_prices(verbose)
+            PriceUpdater(verbose).update()
         self.deposits = Deposits(self.accounts, self.from_day, self._data)
         self.tickers = Tickers(self.accounts, self.from_day, data=self._data)
         self.positions = Positions(
