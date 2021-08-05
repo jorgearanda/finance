@@ -39,7 +39,7 @@ class PriceUpdater:
     def _record_quote(self, quote):
         if quote.price is None:
             if self.verbose:
-                print(f"  x {quote.symbol:6} {quote.day}: -null- (skipping)")
+                print(f"x {quote.symbol:6} {quote.day}: -null- (skipping)")
             return
 
         with db.conn.cursor() as cur:
@@ -63,9 +63,7 @@ class PriceUpdater:
                 )
                 self.new_quotes += 1
                 if self.verbose:
-                    print(
-                        f"  + {quote.symbol:6} {quote.day}:  -.-- -> {quote.price:.2f}"
-                    )
+                    print(f"+ {quote.symbol:6} {quote.day}:  -.-- -> {quote.price:.2f}")
             else:
                 prev_price = cur.fetchone().close
                 if not self._is_same_price(prev_price, quote.price):
@@ -82,7 +80,7 @@ class PriceUpdater:
                     self.updated_quotes += 1
                     if self.verbose:
                         print(
-                            f"  + {quote.symbol:6} {quote.day}: {prev_price} -> {quote.price:.2f}"
+                            f"* {quote.symbol:6} {quote.day}: {prev_price} -> {quote.price:.2f}"
                         )
 
     def _is_same_price(self, prev, new):
