@@ -67,8 +67,8 @@ class PriceUpdater:
                         f"  + {quote.symbol:6} {quote.day}:  -.-- -> {quote.price:.2f}"
                     )
             else:
-                old_price = cur.fetchone().close
-                if not math.isclose(float(old_price), quote.price, abs_tol=0.0051):
+                prev_price = cur.fetchone().close
+                if not self._is_same_price(prev_price, quote.price):
                     cur.execute(
                         """UPDATE assetprices
                         SET close = %(close)s
@@ -82,5 +82,8 @@ class PriceUpdater:
                     self.updated_quotes += 1
                     if self.verbose:
                         print(
-                            f"  + {quote.symbol:6} {quote.day}: {old_price} -> {quote.price:.2f}"
+                            f"  + {quote.symbol:6} {quote.day}: {prev_price} -> {quote.price:.2f}"
                         )
+
+    def _is_same_price(self, prev, new):
+        return math.isclose(float(prev), float(new), abs_tol=0.0051)
