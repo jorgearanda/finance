@@ -52,9 +52,8 @@ class PriceUpdater:
             if cur.rowcount == 0:
                 cur.execute(
                     """
-                    INSERT INTO assetprices (ticker, day, ask, bid, close)
-                    VALUES (%(ticker)s, %(day)s,
-                        %(close)s, %(close)s, %(close)s)
+                    INSERT INTO assetprices (ticker, day, close)
+                    VALUES (%(ticker)s, %(day)s, %(close)s)
                     ON CONFLICT DO NOTHING;""",
                     {
                         "ticker": quote.symbol,
@@ -72,7 +71,7 @@ class PriceUpdater:
                 if not math.isclose(float(old_price), quote.price, abs_tol=0.0051):
                     cur.execute(
                         """UPDATE assetprices
-                        SET ask = %(close)s, bid = %(close)s, close = %(close)s
+                        SET close = %(close)s
                         WHERE ticker = %(ticker)s AND day = %(day)s;""",
                         {
                             "ticker": quote.symbol,
