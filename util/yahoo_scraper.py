@@ -12,8 +12,7 @@ class YahooScraper:
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
     timeout = 5  # seconds
 
-    def __init__(self, verbose=False, look_back_days=30):
-        self.verbose = verbose
+    def __init__(self, look_back_days=30):
         self.look_back_days = look_back_days
         self.cookie = self.crumb = None
 
@@ -32,8 +31,6 @@ class YahooScraper:
         return quotes
 
     def _get_cookie_and_crumb(self):
-        if self.verbose:
-            print("* Getting cookie and crumb")
         req = requests.get(
             self.auth_url,
             headers={"User-Agent": self.user_agent},
@@ -47,8 +44,6 @@ class YahooScraper:
         return cookie, crumb
 
     def _fetch_quotes(self, symbols):
-        if self.verbose:
-            print("* Fetching quotes")
         return grequests.map(
             grequests.get(
                 f"https://query1.finance.yahoo.com/v7/finance/download/{symbol}"
