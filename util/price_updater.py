@@ -15,9 +15,8 @@ class PriceUpdater:
             print("===Updating prices===")
         self._record_quotes(self.scraper.get_quotes(symbols=self._ticker_symbols()))
         if self.verbose:
-            print(f"New quotes: {self.new_quotes}")
-            print(f"Updated quotes: {self.updated_quotes}")
-            print("===Finished updating prices===\n")
+            print(f"{self.new_quotes} new quote(s), {self.updated_quotes} update(s)")
+            print("===Finished update===\n")
 
     def _ticker_symbols(self):
         """Get all the tickers to poll from the database."""
