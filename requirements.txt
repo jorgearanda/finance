@@ -13,3 +13,4 @@ pytest-cov
 pytest-watch
 requests
 seaborn
+sqlalchemy

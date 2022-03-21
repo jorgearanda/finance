@@ -1,6 +1,7 @@
 import pandas as pd
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
+from sqlalchemy import create_engine
 
 import config
 
@@ -26,12 +27,11 @@ def connect(env=_env):
     _env = env
 
     global conn
-    conn = psycopg2.connect(
-        database=config.db[env]["db"],
-        user=config.db[env]["user"],
-        cursor_factory=NamedTupleCursor,
+    engine = create_engine(
+        f"postgresql://{config.db[env]['user']}@localhost/{config.db[env]['db']}",
+        execution_options={"isolation_level": "AUTOCOMMIT"},
     )
-    conn.autocommit = True
+    conn = engine.connect().execution_options(autocommit=True)
 
     return is_alive()
 

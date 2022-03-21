@@ -61,30 +61,27 @@ class Tickers:
     def _get_ticker_names(self, accounts, from_day):
         """Get ticker names for which there are prices available."""
         db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute(
-                """SELECT DISTINCT(ticker) AS name
-                FROM assetprices
-                WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
-                    AND day <= %(today)s
-                ORDER BY name ASC;""",
-                {"from_day": from_day, "today": date.today()},
-            )
-            priced = [x.name for x in cur.fetchall()]
+        cur = db.conn.execute(
+            """SELECT DISTINCT(ticker) AS name
+            FROM assetprices
+            WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
+                AND day <= %(today)s
+            ORDER BY name ASC;""",
+            {"from_day": from_day, "today": date.today()},
+        )
+        priced = [x.name for x in cur.fetchall()]
 
-            cur.execute(
-                """SELECT DISTINCT(target) AS name
-                FROM transactions
-                WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
-                    AND day <= %(today)s
-                    AND account = ANY(%(accounts)s);""",
-                {"from_day": from_day, "today": date.today(), "accounts": accounts},
-            )
-            bought = [x.name for x in cur.fetchall()]
+        cur = db.conn.execute(
+            """SELECT DISTINCT(target) AS name
+            FROM transactions
+            WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
+                AND day <= %(today)s
+                AND account = ANY(%(accounts)s);""",
+            {"from_day": from_day, "today": date.today(), "accounts": accounts},
+        )
+        bought = [x.name for x in cur.fetchall()]
 
-        all_names = list(set(priced).intersection(bought))
-        all_names.sort()
-        return all_names
+        return sorted(set(priced).intersection(bought))
 
     def _get_tickers(self, from_day):
         """Get all ticker objects."""

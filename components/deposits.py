@@ -21,10 +21,7 @@ class Deposits:
 
     def __init__(self, accounts=None, from_day=None, data=None):
         """Instantiate a Deposits object."""
-        if data is None:
-            self._data = Data()
-        else:
-            self._data = data
+        self._data = Data() if data is None else data
         self._accounts = determine_accounts(accounts)
         self._from_day = from_day
         self.deposits = self._get_deposits()

@@ -127,14 +127,13 @@ class Portfolio:
 
     def _get_start_date(self, accounts):
         db.ensure_connected()
-        with db.conn.cursor() as cur:
-            cur.execute(
-                """SELECT MIN(datecreated) AS datecreated
-                FROM accounts
-                WHERE name = ANY(%(accounts)s);""",
-                {"accounts": accounts},
-            )
-            date_created = cur.fetchone().datecreated
+        cur = db.conn.execute(
+            """SELECT MIN(datecreated) AS datecreated
+            FROM accounts
+            WHERE name = ANY(%(accounts)s);""",
+            {"accounts": accounts},
+        )
+        date_created = cur.fetchone().datecreated
 
         if date_created is None:
             return None

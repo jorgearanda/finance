@@ -2,7 +2,7 @@ from decimal import Decimal
 
 
 def cagr(initial, final, years=None, months=None, days=None):
-    '''
+    """
     Calculate the Compound Annual Growth Rate of an investment
 
     Parameters
@@ -21,10 +21,10 @@ def cagr(initial, final, years=None, months=None, days=None):
     Returns
     -------
     Compound Annual Growth Rate with a Decimal type
-    '''
+    """
     initial = Decimal(initial)
     if initial == Decimal(0):
-        raise Exception('The initial value cannot be zero')
+        raise Exception("The initial value cannot be zero")
 
     final = Decimal(final)
 
@@ -35,7 +35,7 @@ def cagr(initial, final, years=None, months=None, days=None):
     elif days is not None:
         years = Decimal(days) / 365
     else:
-        raise Exception('Missing years, months, or days value')
+        raise Exception("Missing years, months, or days value")
 
     if years == Decimal(0):
         return None
