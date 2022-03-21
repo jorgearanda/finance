@@ -55,10 +55,8 @@ def ensure_connected(env=None):
 
     _env = env
     if is_alive():
-        print("was alive")
         return True
     else:
-        print(f"connecting to {_env}")
         return connect(_env)
 
 
