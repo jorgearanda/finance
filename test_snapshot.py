@@ -1,5 +1,6 @@
 import pytest
 
+from conftest import simple_fixture, simple_fixture_teardown
 from db import db
 from snapshot import snapshot
 
@@ -22,10 +23,13 @@ def load_snapshot():
         )
 
 
-@pytest.mark.usefixtures("simple")
 class TestSimpleSnapshot:
     def setup(self):
+        simple_fixture()
         load_snapshot()
+
+    def teardown(self):
+        simple_fixture_teardown()
 
     def test_smoke(self):
         assert True

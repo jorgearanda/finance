@@ -1,11 +1,17 @@
 from datetime import datetime
 import pytest
 
+from conftest import simple_fixture, simple_fixture_teardown
 from db.data import Data
 
 
-@pytest.mark.usefixtures("simple")
 class TestData:
+    def setup(self):
+        simple_fixture()
+
+    def teardown(self):
+        simple_fixture_teardown()
+
     def test_create(self):
         d = Data()
 

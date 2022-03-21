@@ -1,6 +1,7 @@
 from datetime import datetime
 import pytest
 
+from conftest import simple_fixture, simple_fixture_teardown
 from db import db
 
 
@@ -43,8 +44,13 @@ class TestConnectivity:
         assert db.is_alive()
 
 
-@pytest.mark.usefixtures("simple")
 class TestDfFromSql:
+    def setup(self):
+        simple_fixture()
+
+    def teardown(self):
+        simple_fixture_teardown()
+
     def test_query(self):
         sql = """SELECT SUM(total)::double precision AS amount, day
             FROM transactions

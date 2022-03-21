@@ -6,8 +6,7 @@ from db import db
 db._env = "test"
 
 
-@pytest.fixture
-def simple():
+def simple_fixture():
     db._env = "test"
     db.ensure_connected("test")
     db.conn.execute("""DELETE FROM transactions;""")
@@ -97,7 +96,8 @@ def simple():
     db.conn.close()
     db.ensure_connected("test")
 
-    yield True
+
+def simple_fixture_teardown():
     db.ensure_connected("test")
     db.conn.execute("""DELETE FROM transactions;""")
     db.conn.execute("""DELETE FROM distributions;""")

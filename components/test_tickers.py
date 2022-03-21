@@ -2,6 +2,7 @@ from datetime import datetime as dt
 from freezegun import freeze_time
 from pytest import approx
 
+from conftest import simple_fixture, simple_fixture_teardown
 from components.tickers import Tickers
 from db import db
 from db.data import Data
@@ -19,7 +20,8 @@ def test_tickers_class_instantiates():
     assert str(t) == "{}"
 
 
-def test_loads_with_data(simple):
+def test_loads_with_data():
+    simple_fixture()
     with freeze_time(dt(2017, 3, 7)):
         t = Tickers(data=Data())
 
@@ -40,3 +42,4 @@ def test_loads_with_data(simple):
     assert t.correlations["VCN.TO"]["VEE.TO"] == approx(-0.9922778767136671)
 
     assert t.price("2017-03-02", "VCN.TO") == approx(30.00)
+    simple_fixture_teardown()

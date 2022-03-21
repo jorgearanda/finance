@@ -2,6 +2,7 @@ from datetime import datetime as dt
 from freezegun import freeze_time
 from pytest import approx
 
+from conftest import simple_fixture, simple_fixture_teardown
 from components.positions import Positions
 from db import db
 from db.data import Data
@@ -15,11 +16,10 @@ def setup_function():
 def test_positions_class_instantiates():
     p = Positions(data=Data())
     assert p is not None
-    assert p.__repr__() == "{}"
-    assert str(p) == "{}"
 
 
-def test_loads_with_data(simple):
+def test_loads_with_data():
+    simple_fixture()
     with freeze_time(dt(2017, 3, 7)):
         p = Positions(data=Data())
 
@@ -46,3 +46,4 @@ def test_loads_with_data(simple):
     assert p.total_returns.loc["2017-03-03"]["VCN.TO"] == approx(
         (3010.0 + 10.1 - 3010.35) / 3010.35
     )
+    simple_fixture_teardown()

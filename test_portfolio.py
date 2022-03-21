@@ -5,6 +5,7 @@ from pandas import Timestamp
 import pytest
 from pytest import approx
 
+from conftest import simple_fixture, simple_fixture_teardown
 from portfolio import Portfolio
 from db import db
 
@@ -18,10 +19,14 @@ def load_portfolio():
             p = Portfolio(update=False)
 
 
-@pytest.mark.usefixtures("simple")  # has data starting on 2017-03-02
+# @pytest.mark.usefixtures("simple")  # has data starting on 2017-03-02
 class TestSimplePortfolio:
     def setup(self):
+        simple_fixture()
         load_portfolio()
+
+    def teardown(self):
+        simple_fixture_teardown()
 
     def test_smoke(self):
         assert p.deposits

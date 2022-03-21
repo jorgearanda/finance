@@ -3,6 +3,7 @@ from freezegun import freeze_time
 import math
 from pytest import approx
 
+from conftest import simple_fixture, simple_fixture_teardown
 from components.position import Position
 from db import db
 from db.data import Data
@@ -21,7 +22,8 @@ def test_position_class_instantiates():
     assert "Empty" in str(vcn)
 
 
-def test_position_class_instantiates_with_data(simple):
+def test_position_class_instantiates_with_data():
+    simple_fixture()
     with freeze_time(dt(2017, 3, 7)):
         vcn = Position("VCN.TO", data=Data())
 
@@ -29,9 +31,11 @@ def test_position_class_instantiates_with_data(simple):
     assert vcn.ticker_name == "VCN.TO"
     assert "total_returns" in vcn.__repr__()
     assert "total_returns" in str(vcn)
+    simple_fixture_teardown()
 
 
-def test_values(simple):
+def test_values():
+    simple_fixture()
     with freeze_time(dt(2017, 3, 7)):
         vcn = Position("VCN.TO", data=Data())
         vcn.calc_weight(vcn.values["market_value"])
@@ -68,8 +72,8 @@ def test_values(simple):
 
     assert vcn.open_profit("2017-03-01") is None
     assert vcn.open_profit("2017-03-02") == 0
-    assert approx(vcn.open_profit("2017-03-03"), -0.35)
-    assert approx(vcn.open_profit("2017-03-06"), -25.35)
+    assert vcn.open_profit("2017-03-03") == approx(-0.35)
+    assert vcn.open_profit("2017-03-06") == approx(-25.35)
     assert vcn.open_profit("2017-03-08") is None
 
     assert vcn.distributions("2017-03-01") is None
@@ -92,10 +96,11 @@ def test_values(simple):
 
     assert vcn.total_returns("2017-03-01") is None
     assert vcn.total_returns("2017-03-02") == 0
-    assert approx(vcn.total_returns("2017-03-03"), (3010.0 + 10.1 - 3010.35) / 3010.35)
-    assert approx(vcn.total_returns("2017-03-06"), (2985.0 + 20.0 - 3010.35) / 3010.35)
+    assert vcn.total_returns("2017-03-03") == approx((3010.0 + 10.1 - 3010.35) / 3010.35)
+    assert vcn.total_returns("2017-03-06") == approx((2985.0 + 20.0 - 3010.35) / 3010.35)
     assert vcn.total_returns("2017-03-08") is None
 
     assert vcn.weight("2017-03-01") is None
     assert vcn.weight("2017-03-02") == 0
     assert vcn.weight("2017-03-06") == 1
+    simple_fixture_teardown()

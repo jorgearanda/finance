@@ -3,6 +3,7 @@ from freezegun import freeze_time
 import pandas as pd
 from pytest import approx
 
+from conftest import simple_fixture, simple_fixture_teardown
 from components.ticker import Ticker
 from db import db
 from db.data import Data
@@ -25,7 +26,8 @@ def test_price_does_not_crash_when_empty():
     assert Ticker("VCN.TO", data=Data()).price(date.today()) is None
 
 
-def test_values(simple):
+def test_values():
+    simple_fixture()
     with freeze_time(dt(2017, 3, 7)):
         vcn = Ticker("VCN.TO", data=Data())
 
@@ -82,3 +84,4 @@ def test_values(simple):
     )
 
     assert vcn.volatility == approx(vcn.values[(vcn.values.open)]["change"].std(axis=0))
+    simple_fixture_teardown()
