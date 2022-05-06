@@ -14,7 +14,7 @@ class YahooScraper:
 
     def __init__(self, look_back_days=30):
         self.look_back_days = look_back_days
-        self.cookie = self.crumb = None
+        self.crumb = None
 
     def get_quotes(self, symbols):
         """
@@ -22,26 +22,25 @@ class YahooScraper:
 
         Returns a list of Quote objects with symbol, day, and price attributes.
         """
-        if self.cookie is None:
-            self.cookie, self.crumb = self._get_cookie_and_crumb()
+        if self.crumb is None:
+            self.crumb = self._get_crumb()
         responses = self._fetch_quotes(symbols)
         quotes = []
         for res in responses:
             quotes.extend(self._parse_quotes(res))
         return quotes
 
-    def _get_cookie_and_crumb(self):
+    def _get_crumb(self):
         req = requests.get(
             self.auth_url,
             headers={"User-Agent": self.user_agent},
             timeout=self.timeout,
         )
-        cookie = {"B": req.cookies["B"]}
         content = req.content.decode("unicode-escape")
         match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
         crumb = match.group(1)
 
-        return cookie, crumb
+        return crumb
 
     def _fetch_quotes(self, symbols):
         return grequests.map(
@@ -50,7 +49,6 @@ class YahooScraper:
                 f"?period1={self._ts_from()}&period2={self._ts_to()}&"
                 f"interval=1d&events=historical&crumb={self.crumb}",
                 headers={"User-Agent": self.user_agent},
-                cookies=self.cookie,
                 timeout=self.timeout,
             )
             for symbol in symbols
