@@ -72,34 +72,19 @@ class Portfolio:
         return self.by_day[prop][day]
 
     def latest(self):
-        if len(self.by_day.index) > 0:
-            return self.by_day.iloc[-1]
-        else:
-            return None
+        return self.by_day.iloc[-1] if len(self.by_day.index) > 0 else None
 
     def current_month(self):
-        if len(self.by_month.index) > 0:
-            return self.by_month.iloc[-1]
-        else:
-            return None
+        return self.by_month.iloc[-1] if len(self.by_month.index) > 0 else None
 
     def previous_month(self):
-        if len(self.by_month.index) > 1:
-            return self.by_month.iloc[-2]
-        else:
-            return None
+        return self.by_month.iloc[-2] if len(self.by_month.index) > 1 else None
 
     def current_year(self):
-        if len(self.by_year.index) > 0:
-            return self.by_year.iloc[-1]
-        else:
-            return None
+        return self.by_year.iloc[-1] if len(self.by_year.index) > 0 else None
 
     def previous_year(self):
-        if len(self.by_year.index) > 1:
-            return self.by_year.iloc[-2]
-        else:
-            return None
+        return self.by_year.iloc[-2] if len(self.by_year.index) > 1 else None
 
     def allocations(self):
         return self.positions.weights.iloc[-1]
@@ -120,8 +105,8 @@ class Portfolio:
             self.accounts, self.from_day, self.tickers, data=self._data
         )
         self.by_day = self._calc_daily()
-        self.by_month = self._calc_monthly()
-        self.by_year = self._calc_yearly()
+        self.by_month = self._summarize_by("month")
+        self.by_year = self._summarize_by("year")
         if len(self.by_day.index) > 0:
             self.positions.calc_weights(self.by_day["total_value"])
 
@@ -196,38 +181,21 @@ class Portfolio:
 
         return df
 
-    def _calc_monthly(self):
+    def _summarize_by(self, freq):
+        """Valid frequencies are `month` and `year`."""
         if self._no_tickers():
             return pd.DataFrame()
-        df = self.by_day.asfreq("M")
+        df = self.by_day.asfreq("M" if freq == "month" else "A")
         if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
             df.loc[self.by_day.index.values[-1]] = self.by_day.iloc[-1]
         df = df.drop(
             ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
         )
-        df["month_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00)
-        df["month_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
-        df["month_returns"] = relative_rate(df["returns"])
-        df["month_twrr"] = relative_rate(df["twrr"])
-        df["month_mwrr"] = relative_rate(df["mwrr"])
-
-        return df
-
-    def _calc_yearly(self):
-        if self._no_tickers():
-            return pd.DataFrame()
-        df = self.by_day.asfreq("A")
-        if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
-            df.loc[self.by_day.index.values[-1]] = self.by_day.iloc[-1]
-        df = df.drop(
-            ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
-        )
-        df["year_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0)
-        df["year_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
-        df["year_returns"] = relative_rate(df["returns"])
-        df["year_twrr"] = relative_rate(df["twrr"])
-        df["year_mwrr"] = relative_rate(df["mwrr"])
-
+        df[f"{freq}_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00)
+        df[f"{freq}_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
+        df[f"{freq}_returns"] = relative_rate(df["returns"])
+        df[f"{freq}_twrr"] = relative_rate(df["twrr"])
+        df[f"{freq}_mwrr"] = relative_rate(df["mwrr"])
         return df
 
     def _no_tickers(self):
