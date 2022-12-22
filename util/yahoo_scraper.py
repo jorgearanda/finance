@@ -37,8 +37,7 @@ class YahooScraper:
             timeout=self.timeout,
         )
         content = req.content.decode("unicode-escape")
-        match = re.search(r'CrumbStore":{"crumb":"(.*?)"}', content)
-        crumb = match.group(1)
+        crumb = re.search(r'"crumb":"(.*?)"', content).group(1)
 
         return crumb
 
