@@ -8,8 +8,8 @@ from datetime import date, datetime as dt, timedelta
 
 class YahooScraper:
     auth_url = "https://finance.yahoo.com/quote/VAB.TO/history?p=VAB.TO"
-    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15"
     timeout = 5  # seconds
 
     def __init__(self, look_back_days=30):
@@ -37,7 +37,10 @@ class YahooScraper:
             timeout=self.timeout,
         )
         content = req.content.decode("unicode-escape")
-        crumb = re.search(r'"crumb":"(.*?)"', content).group(1)
+        try:
+            crumb = re.search(r'"crumb":"(.*?)"', content).group(1)
+        except AttributeError:
+            crumb = re.search(r"crumb:([A-Za-z0-9]*?)", content).group(1)
 
         return crumb
 
