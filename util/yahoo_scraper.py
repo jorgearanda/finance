@@ -1,5 +1,6 @@
 import calendar
 import grequests
+import json
 import re
 import requests
 
@@ -38,16 +39,15 @@ class YahooScraper:
         )
         content = req.content.decode("unicode-escape")
         try:
-            crumb = re.search(r'"crumb":"(.*?)"', content).group(1)
+            crumb = re.search(r"crumb=([A-Za-z0-9]+)", content).group(1)
         except AttributeError:
-            crumb = re.search(r"crumb:([A-Za-z0-9]*?)", content).group(1)
-
+            crumb = re.search(r'"crumb":"(.*?)"', content).group(1)
         return crumb
 
     def _fetch_quotes(self, symbols):
         return grequests.map(
             grequests.get(
-                f"https://query1.finance.yahoo.com/v7/finance/download/{symbol}"
+                f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}"
                 f"?period1={self._ts_from()}&period2={self._ts_to()}&"
                 f"interval=1d&events=historical&crumb={self.crumb}",
                 headers={"User-Agent": self.user_agent},
@@ -65,22 +65,22 @@ class YahooScraper:
         return calendar.timegm((date.today() + timedelta(days=1)).timetuple())
 
     def _parse_quotes(self, res):
-        symbol = self._symbol_from_url(res)
-        return [
-            Quote(symbol, line) for line in res.text.split("\n")[1:] if len(line) > 0
-        ]
+        payload = json.loads(res.text)
+        symbol = payload["chart"]["result"][0]["meta"]["symbol"]
+        timestamps = payload["chart"]["result"][0]["timestamp"]
+        closes = payload["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        return [Quote(symbol, entry) for entry in zip(timestamps, closes)]
 
     def _symbol_from_url(self, res):
         return re.search(r"download/(.*)\?", res.request.url).group(1)
 
 
 class Quote:
-    def __init__(self, symbol, line):
+    def __init__(self, symbol, entry):
         """
-        Yahoo result lines are CSVs with the format:
-        Date,Open,High,Low,Close,Adj Close,Volume
+        Entries have two fields, date as a timestamp and closing price.
         """
         self.symbol = symbol
-        self.day = dt.strptime(line.split(",")[0], "%Y-%m-%d").date()
-        price = line.split(",")[4]
+        self.day = date.fromtimestamp(entry[0])
+        price = entry[1]
         self.price = float(price) if price != "null" else None
