@@ -1,6 +1,9 @@
 from datetime import timedelta
 import numpy as np
 import pandas as pd
+
+pd.set_option("future.no_silent_downcasting", True)
+
 from sqlalchemy import text
 
 from components.deposits import Deposits
@@ -194,8 +197,8 @@ class Portfolio:
         df = df.drop(
             ["market_day", "day_deposits", "day_profit", "day_returns"], axis=1
         )
-        df[f"{freq}_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00)
-        df[f"{freq}_profit"] = df["profit"] - df["profit"].shift(1).fillna(0)
+        df[f"{freq}_deposits"] = df["capital"] - df["capital"].shift(1).fillna(0.00).infer_objects(copy=False)
+        df[f"{freq}_profit"] = df["profit"] - df["profit"].shift(1).fillna(0).infer_objects(copy=False)
         df[f"{freq}_returns"] = relative_rate(df["returns"])
         df[f"{freq}_twrr"] = relative_rate(df["twrr"])
         df[f"{freq}_mwrr"] = relative_rate(df["mwrr"])

@@ -1,6 +1,8 @@
 from datetime import date
 import pandas as pd
 
+pd.set_option("future.no_silent_downcasting", True)
+
 from components.ticker import Ticker
 from util.determine_accounts import determine_accounts
 
@@ -183,9 +185,9 @@ class Position:
             parse_dates=["day"],
         )
 
-        df["units"] = df["units"].fillna(0).cumsum()
-        df["cost"] = df["cost"].fillna(0).cumsum()
-        df["distributions"] = df["distributions"].fillna(0).cumsum()
+        df["units"] = df["units"].fillna(0).infer_objects(copy=False).cumsum()
+        df["cost"] = df["cost"].fillna(0).infer_objects(copy=False).cumsum()
+        df["distributions"] = df["distributions"].fillna(0).infer_objects(copy=False).cumsum()
         df["current_price"] = self._ticker.values["price"]
         df["cost_per_unit"] = df["cost"] / df["units"]
         df["market_value"] = df["units"] * df["current_price"]

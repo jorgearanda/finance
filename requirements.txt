@@ -2,7 +2,7 @@ black
 coverage
 docopt
 freezegun
-grequests
+httpx
 jupyterlab
 matplotlib
 numpy
