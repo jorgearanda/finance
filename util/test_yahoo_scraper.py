@@ -11,7 +11,9 @@ def test_yahoo_scraper_initializes():
 
 
 def test_quote_class():
-    q = Quote("SYM", "2021-07-29,77.22,77.42,77.15,77.15,77.14,56026")
+    # Entry is a tuple of (timestamp, closing_price) from Yahoo JSON API
+    timestamp = 1627560000  # 2021-07-29
+    q = Quote("SYM", (timestamp, 77.15))
     assert q.symbol == "SYM"
     assert q.day == date(2021, 7, 29)
     assert q.price == 77.15
