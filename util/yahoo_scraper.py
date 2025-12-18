@@ -29,7 +29,8 @@ class YahooScraper:
         return grequests.map(
             grequests.get(
                 f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}"
-                f"?period1={self._ts_from()}&period2={self._ts_to()}&interval=1d",
+                f"?period1={self._ts_from()}&period2={self._ts_to()}"
+                "&interval=1d&events=historical&crumb=RIFO8TvSQSf",
                 headers={"User-Agent": self.user_agent},
                 timeout=self.timeout,
             )
