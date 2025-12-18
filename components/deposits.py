@@ -33,9 +33,9 @@ class Deposits:
         return self._data.df_from_sql(
             """SELECT SUM(total)::double precision AS amount, day
             FROM transactions
-            WHERE account = ANY(%(accounts)s)
-                AND (%(from_day)s IS NULL OR day >= %(from_day)s)
-                AND day <= %(today)s
+            WHERE account = ANY(:accounts)
+                AND (:from_day IS NULL OR day >= :from_day)
+                AND day <= :today
                 AND txtype = 'deposit'
             GROUP BY day
             ORDER BY day ASC;""",

@@ -6,7 +6,7 @@ from db import db
 
 
 class TestConnectivity:
-    def setup(self):
+    def setup_method(self):
         db.conn = None
         db._env = "test"
 
@@ -45,18 +45,18 @@ class TestConnectivity:
 
 
 class TestDfFromSql:
-    def setup(self):
+    def setup_method(self):
         simple_fixture()
 
-    def teardown(self):
+    def teardown_method(self):
         simple_fixture_teardown()
 
     def test_query(self):
         sql = """SELECT SUM(total)::double precision AS amount, day
             FROM transactions
-            WHERE account = ANY(%(accounts)s)
-                AND (%(from_day)s IS NULL OR day >= %(from_day)s)
-                AND day <= %(today)s
+            WHERE account = ANY(:accounts)
+                AND (:from_day IS NULL OR day >= :from_day)
+                AND day <= :today
                 AND txtype = 'deposit'
             GROUP BY day
             ORDER BY day ASC;

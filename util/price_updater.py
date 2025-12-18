@@ -1,5 +1,7 @@
 import math
 
+from sqlalchemy import text
+
 from db import db
 from util.yahoo_scraper import YahooScraper
 
@@ -21,12 +23,12 @@ class PriceUpdater:
     def _ticker_symbols(self):
         """Get all the tickers to poll from the database."""
         db.ensure_connected()
-        cur = db.conn.execute(
+        cur = db.conn.execute(text(
             """
             SELECT ticker AS name
             FROM assets
             WHERE class != 'Domestic Cash';"""
-        )
+        ))
 
         return [ticker.name for ticker in cur.fetchall()]
 
@@ -41,17 +43,17 @@ class PriceUpdater:
             return
 
         cur = db.conn.execute(
-            """SELECT close FROM assetprices
-            WHERE ticker = %(ticker)s AND day = %(day)s;""",
+            text("""SELECT close FROM assetprices
+            WHERE ticker = :ticker AND day = :day;"""),
             {"ticker": quote.symbol, "day": quote.day},
         )
 
         if cur.rowcount == 0:
             cur = db.conn.execute(
-                """
+                text("""
                 INSERT INTO assetprices (ticker, day, close)
-                VALUES (%(ticker)s, %(day)s, %(close)s)
-                ON CONFLICT DO NOTHING;""",
+                VALUES (:ticker, :day, :close)
+                ON CONFLICT DO NOTHING;"""),
                 {
                     "ticker": quote.symbol,
                     "day": quote.day,
@@ -65,9 +67,9 @@ class PriceUpdater:
             prev_price = cur.fetchone().close
             if not self._is_same_price(prev_price, quote.price):
                 cur = db.conn.execute(
-                    """UPDATE assetprices
-                    SET close = %(close)s
-                    WHERE ticker = %(ticker)s AND day = %(day)s;""",
+                    text("""UPDATE assetprices
+                    SET close = :close
+                    WHERE ticker = :ticker AND day = :day;"""),
                     {
                         "ticker": quote.symbol,
                         "day": quote.day,

@@ -21,11 +21,13 @@ def load_portfolio():
 
 # @pytest.mark.usefixtures("simple")  # has data starting on 2017-03-02
 class TestSimplePortfolio:
-    def setup(self):
+    def setup_method(self):
+        global p
+        p = None  # Reset the global portfolio for each test
         simple_fixture()
         load_portfolio()
 
-    def teardown(self):
+    def teardown_method(self):
         simple_fixture_teardown()
 
     def test_smoke(self):

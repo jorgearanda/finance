@@ -151,27 +151,27 @@ class Position:
                 (SELECT SUM(units)::int AS units,
                     SUM(total)::double precision AS total, day
                 FROM transactions
-                WHERE account = ANY(%(accounts)s)
-                    AND (%(from_day)s IS NULL OR day >= %(from_day)s)
+                WHERE account = ANY(:accounts)
+                    AND (:from_day IS NULL OR day >= :from_day)
                     AND txtype = 'buy'
-                    AND target = %(ticker_name)s
+                    AND target = :ticker_name
                 GROUP BY day
                 ORDER BY day ASC),
             dividends AS
                 (SELECT SUM(total)::double precision AS total, day
                 FROM transactions
-                WHERE account = ANY(%(accounts)s)
-                    AND (%(from_day)s IS NULL OR day >= %(from_day)s)
+                WHERE account = ANY(:accounts)
+                    AND (:from_day IS NULL OR day >= :from_day)
                     AND txtype = 'dividend'
-                    AND source = %(ticker_name)s
+                    AND source = :ticker_name
                 GROUP BY day
                 ORDER BY day ASC)
             SELECT m.day, buys.units, buys.total AS cost,
                 dividends.total AS distributions
             FROM marketdays m LEFT JOIN buys USING (day)
             LEFT JOIN dividends USING (day)
-            WHERE (%(from_day)s IS NULL OR m.day >= %(from_day)s)
-                AND m.day <= %(today)s
+            WHERE (:from_day IS NULL OR m.day >= :from_day)
+                AND m.day <= :today
             ORDER BY m.day ASC;""",
             params={
                 "accounts": self.accounts,

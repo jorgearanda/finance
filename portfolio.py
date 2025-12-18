@@ -1,6 +1,7 @@
 from datetime import timedelta
 import numpy as np
 import pandas as pd
+from sqlalchemy import text
 
 from components.deposits import Deposits
 from components.positions import Positions
@@ -113,9 +114,11 @@ class Portfolio:
     def _get_start_date(self, accounts):
         db.ensure_connected()
         cur = db.conn.execute(
-            """SELECT MIN(datecreated) AS datecreated
+            text(
+                """SELECT MIN(datecreated) AS datecreated
             FROM accounts
-            WHERE name = ANY(%(accounts)s);""",
+            WHERE name = ANY(:accounts);"""
+            ),
             {"accounts": accounts},
         )
         date_created = cur.fetchone().datecreated
@@ -162,7 +165,7 @@ class Portfolio:
             df["mwrr"],
         )
         df["volatility"] = df[(df["market_day"])]["day_returns"].expanding().std()
-        df["volatility"].fillna(method="ffill", inplace=True)
+        df["volatility"] = df["volatility"].ffill()
         df["10k_equivalent"] = 10000 * (df["twrr"] + 1)
         df["last_peak_twrr"] = df["twrr"].expanding().max()
         df["last_peak"] = (
@@ -185,7 +188,7 @@ class Portfolio:
         """Valid frequencies are `month` and `year`."""
         if self._no_tickers():
             return pd.DataFrame()
-        df = self.by_day.asfreq("M" if freq == "month" else "A")
+        df = self.by_day.asfreq("ME" if freq == "month" else "YE")
         if df.empty or df.index.values[-1] != self.by_day.index.values[-1]:
             df.loc[self.by_day.index.values[-1]] = self.by_day.iloc[-1]
         df = df.drop(

@@ -96,8 +96,12 @@ def test_values():
 
     assert vcn.total_returns("2017-03-01") is None
     assert vcn.total_returns("2017-03-02") == 0
-    assert vcn.total_returns("2017-03-03") == approx((3010.0 + 10.1 - 3010.35) / 3010.35)
-    assert vcn.total_returns("2017-03-06") == approx((2985.0 + 20.0 - 3010.35) / 3010.35)
+    assert vcn.total_returns("2017-03-03") == approx(
+        (3010.0 + 10.1 - 3010.35) / 3010.35
+    )
+    assert vcn.total_returns("2017-03-06") == approx(
+        (2985.0 + 20.0 - 3010.35) / 3010.35
+    )
     assert vcn.total_returns("2017-03-08") is None
 
     assert vcn.weight("2017-03-01") is None

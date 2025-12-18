@@ -1,4 +1,5 @@
 import pandas as pd
+from sqlalchemy import text
 
 from db import db
 
@@ -25,7 +26,7 @@ class Data:
         other components may use this without exposing the database connection to them.
         """
         return pd.read_sql_query(
-            sql=sql,
+            sql=text(sql),
             con=self._conn,
             params=params,
             index_col=index_col,

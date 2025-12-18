@@ -1,5 +1,6 @@
 from datetime import date
 import pandas as pd
+from sqlalchemy import text
 
 from components.ticker import Ticker
 from db import db
@@ -62,21 +63,21 @@ class Tickers:
         """Get ticker names for which there are prices available."""
         db.ensure_connected()
         cur = db.conn.execute(
-            """SELECT DISTINCT(ticker) AS name
+            text("""SELECT DISTINCT(ticker) AS name
             FROM assetprices
-            WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
-                AND day <= %(today)s
-            ORDER BY name ASC;""",
+            WHERE (:from_day IS NULL OR day >= :from_day)
+                AND day <= :today
+            ORDER BY name ASC;"""),
             {"from_day": from_day, "today": date.today()},
         )
         priced = [x.name for x in cur.fetchall()]
 
         cur = db.conn.execute(
-            """SELECT DISTINCT(target) AS name
+            text("""SELECT DISTINCT(target) AS name
             FROM transactions
-            WHERE (%(from_day)s IS NULL OR day >= %(from_day)s)
-                AND day <= %(today)s
-                AND account = ANY(%(accounts)s);""",
+            WHERE (:from_day IS NULL OR day >= :from_day)
+                AND day <= :today
+                AND account = ANY(:accounts);"""),
             {"from_day": from_day, "today": date.today(), "accounts": accounts},
         )
         bought = [x.name for x in cur.fetchall()]

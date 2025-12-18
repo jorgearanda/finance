@@ -24,15 +24,17 @@ def load_snapshot():
 
 
 class TestSimpleSnapshot:
-    def setup(self):
+    def setup_method(self):
+        global s
+        s = None  # Reset the global snapshot for each test
         simple_fixture()
         load_snapshot()
 
-    def teardown(self):
+    def teardown_method(self):
         simple_fixture_teardown()
 
     def test_smoke(self):
-        assert True
+        pass
 
     def test_title(self):
         assert "Portfolio Snapshot" in s

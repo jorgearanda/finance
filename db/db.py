@@ -1,7 +1,7 @@
 import pandas as pd
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 import config
 
@@ -75,5 +75,5 @@ def df_from_sql(sql, params, index_col, parse_dates):
     """
     ensure_connected()
     return pd.read_sql_query(
-        sql=sql, con=conn, params=params, index_col=index_col, parse_dates=parse_dates
+        sql=text(sql), con=conn, params=params, index_col=index_col, parse_dates=parse_dates
     )
