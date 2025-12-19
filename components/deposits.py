@@ -1,4 +1,5 @@
 from datetime import date
+from sqlalchemy import bindparam
 
 from db.data import Data
 from util.determine_accounts import determine_accounts
@@ -31,9 +32,9 @@ class Deposits:
 
     def _get_deposits(self):
         return self._data.df_from_sql(
-            """SELECT SUM(total)::double precision AS amount, day
+            """SELECT SUM(total) AS amount, day
             FROM transactions
-            WHERE account = ANY(:accounts)
+            WHERE account IN :accounts
                 AND (:from_day IS NULL OR day >= :from_day)
                 AND day <= :today
                 AND txtype = 'deposit'
@@ -46,4 +47,5 @@ class Deposits:
             },
             index_col="day",
             parse_dates=["day"],
+            bindparams=[bindparam("accounts", expanding=True)],
         )

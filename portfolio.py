@@ -1,10 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
 pd.set_option("future.no_silent_downcasting", True)
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 
 from components.deposits import Deposits
 from components.positions import Positions
@@ -120,7 +120,9 @@ class Portfolio:
             text(
                 """SELECT MIN(datecreated) AS datecreated
             FROM accounts
-            WHERE name = ANY(:accounts);"""
+            WHERE name IN :accounts;"""
+            ).bindparams(
+                bindparam("accounts", expanding=True)
             ),
             {"accounts": accounts},
         )
@@ -128,6 +130,11 @@ class Portfolio:
 
         if date_created is None:
             return None
+
+        # Convert string to date if needed (SQLite stores dates as strings)
+        if isinstance(date_created, str):
+            date_created = datetime.fromisoformat(date_created).date()
+
         return date_created - timedelta(days=1)
 
     def _calc_daily(self):
@@ -167,7 +174,7 @@ class Portfolio:
             (1.0 + df["mwrr"]) ** (1 / df["years_from_start"]) - 1,
             df["mwrr"],
         )
-        df["volatility"] = df[(df["market_day"])]["day_returns"].expanding().std()
+        df["volatility"] = df[df["market_day"] == 1]["day_returns"].expanding().std()
         df["volatility"] = df["volatility"].ffill()
         df["10k_equivalent"] = 10000 * (df["twrr"] + 1)
         df["last_peak_twrr"] = df["twrr"].expanding().max()

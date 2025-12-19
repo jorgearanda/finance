@@ -23,7 +23,7 @@ def simple_fixture():
         text(
             """
         INSERT INTO accounttypes (name, tax, margin)
-        VALUES ('RRSP', 'deferred', false);"""
+        VALUES ('RRSP', 'deferred', 0);"""
         )
     )
     db.conn.execute(
@@ -45,13 +45,13 @@ def simple_fixture():
             """
         INSERT INTO marketdays (day, open)
         VALUES
-            ('2017-03-02', true),
-            ('2017-03-03', true),
-            ('2017-03-04', false),
-            ('2017-03-05', false),
-            ('2017-03-06', true),
-            ('2017-03-07', true),
-            ('2017-03-08', true);"""
+            ('2017-03-02', 1),
+            ('2017-03-03', 1),
+            ('2017-03-04', 0),
+            ('2017-03-05', 0),
+            ('2017-03-06', 1),
+            ('2017-03-07', 1),
+            ('2017-03-08', 1);"""
         )
     )
     db.conn.execute(
@@ -59,9 +59,9 @@ def simple_fixture():
             """
         INSERT INTO assetclasses (name, domesticcurrency)
         VALUES
-            ('Cash', true),
-            ('Domestic Equity', true),
-            ('Emergent Markets Equity', false);"""
+            ('Cash', 1),
+            ('Domestic Equity', 1),
+            ('Emergent Markets Equity', 0);"""
         )
     )
     db.conn.execute(

@@ -1,6 +1,6 @@
 from datetime import date
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 
 from components.ticker import Ticker
 from db import db
@@ -77,7 +77,9 @@ class Tickers:
             FROM transactions
             WHERE (:from_day IS NULL OR day >= :from_day)
                 AND day <= :today
-                AND account = ANY(:accounts);"""),
+                AND account IN :accounts;""").bindparams(
+                bindparam("accounts", expanding=True)
+            ),
             {"from_day": from_day, "today": date.today(), "accounts": accounts},
         )
         bought = [x.name for x in cur.fetchall()]

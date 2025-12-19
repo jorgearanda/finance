@@ -1,5 +1,6 @@
 from datetime import datetime
 import pytest
+from sqlalchemy import bindparam, text
 
 from conftest import simple_fixture, simple_fixture_teardown
 from db import db
@@ -52,9 +53,9 @@ class TestDfFromSql:
         simple_fixture_teardown()
 
     def test_query(self):
-        sql = """SELECT SUM(total)::double precision AS amount, day
+        sql = """SELECT SUM(total) AS amount, day
             FROM transactions
-            WHERE account = ANY(:accounts)
+            WHERE account IN :accounts
                 AND (:from_day IS NULL OR day >= :from_day)
                 AND day <= :today
                 AND txtype = 'deposit'
@@ -69,7 +70,10 @@ class TestDfFromSql:
         index_col = "day"
         parse_dates = ["day"]
 
-        df = db.df_from_sql(sql, params, index_col, parse_dates)
+        df = db.df_from_sql(
+            sql, params, index_col, parse_dates,
+            bindparams=[bindparam("accounts", expanding=True)]
+        )
 
         assert len(df) == 1
         assert df.loc[datetime(2017, 3, 2)]["amount"] == 10000

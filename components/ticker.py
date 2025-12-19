@@ -94,10 +94,10 @@ class Ticker:
         """Create a DataFrame with daily ticker data."""
         df = self._data.df_from_sql(
             """WITH tickerdistributions AS
-                (SELECT day, amount::double precision
+                (SELECT day, amount
                 FROM distributions
                 WHERE ticker = :ticker_name)
-            SELECT m.day, m.open, p.close::double precision AS price,
+            SELECT m.day, m.open, p.close AS price,
                 COALESCE(d.amount, 0) AS distribution
             FROM marketdays m LEFT JOIN assetprices p USING (day)
             LEFT JOIN tickerdistributions d USING (day)
@@ -135,4 +135,4 @@ class Ticker:
         if self.values.empty:
             return None
         else:
-            return self.values[(self.values.open)]["change"].std(axis=0)
+            return self.values[self.values.open == 1]["change"].std(axis=0)

@@ -1,7 +1,5 @@
 import pandas as pd
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
-from sqlalchemy import create_engine, text
+from sqlalchemy import bindparam, create_engine, text
 
 import config
 
@@ -11,7 +9,7 @@ _env = "dev"
 
 
 def connect(env=_env):
-    """Connect to finance database.
+    """Connect to finance database (PostgreSQL or SQLite).
 
     The connection becomes available on the `conn` singleton variable.
     Subsequent calls to `connect()` release previous connections and reconnect.
@@ -23,16 +21,29 @@ def connect(env=_env):
     Returns:
     bool -- True if the connection is alive
     """
-    global _env
+    global _env, conn
     _env = env
 
-    global conn
-    engine = create_engine(
-        f"postgresql://{config.db[env]['user']}@localhost/{config.db[env]['db']}",
-        execution_options={"isolation_level": "AUTOCOMMIT"},
-    )
-    conn = engine.connect().execution_options(autocommit=True)
+    db_config = config.db[env]
 
+    if db_config.get("type") == "sqlite":
+        # SQLite connection
+        from pathlib import Path
+        db_path = db_config["path"]
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        engine = create_engine(
+            f"sqlite:///{db_path}",
+            execution_options={"isolation_level": "AUTOCOMMIT"},
+        )
+    else:
+        # PostgreSQL connection (existing)
+        engine = create_engine(
+            f"postgresql://{db_config['user']}@localhost/{db_config['db']}",
+            execution_options={"isolation_level": "AUTOCOMMIT"},
+        )
+
+    conn = engine.connect().execution_options(autocommit=True)
     return is_alive()
 
 
@@ -66,7 +77,7 @@ def is_alive():
     return conn is not None and not conn.closed
 
 
-def df_from_sql(sql, params, index_col, parse_dates):
+def df_from_sql(sql, params, index_col, parse_dates, bindparams=None):
     """Return a dataframe from a SQL query.
 
     Return a dataframe from a sql query, given the parameters provided.
@@ -74,6 +85,10 @@ def df_from_sql(sql, params, index_col, parse_dates):
     other components may use this without exposing the database connection to them.
     """
     ensure_connected()
+    sql_text = text(sql)
+    if bindparams:
+        sql_text = sql_text.bindparams(*bindparams)
+
     return pd.read_sql_query(
-        sql=text(sql), con=conn, params=params, index_col=index_col, parse_dates=parse_dates
+        sql=sql_text, con=conn, params=params, index_col=index_col, parse_dates=parse_dates
     )

@@ -15,6 +15,7 @@ def setup_function():
 
 
 def test_position_class_instantiates():
+    simple_fixture_teardown()  # Clean database first
     vcn = Position("VCN.TO", data=Data())
     assert vcn is not None
     assert vcn.ticker_name == "VCN.TO"

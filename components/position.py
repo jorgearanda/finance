@@ -1,5 +1,6 @@
 from datetime import date
 import pandas as pd
+from sqlalchemy import bindparam
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -150,19 +151,19 @@ class Position:
         """Create a DataFrame with daily position data."""
         df = self._data.df_from_sql(
             """WITH buys AS
-                (SELECT SUM(units)::int AS units,
-                    SUM(total)::double precision AS total, day
+                (SELECT SUM(units) AS units,
+                    SUM(total) AS total, day
                 FROM transactions
-                WHERE account = ANY(:accounts)
+                WHERE account IN :accounts
                     AND (:from_day IS NULL OR day >= :from_day)
                     AND txtype = 'buy'
                     AND target = :ticker_name
                 GROUP BY day
                 ORDER BY day ASC),
             dividends AS
-                (SELECT SUM(total)::double precision AS total, day
+                (SELECT SUM(total) AS total, day
                 FROM transactions
-                WHERE account = ANY(:accounts)
+                WHERE account IN :accounts
                     AND (:from_day IS NULL OR day >= :from_day)
                     AND txtype = 'dividend'
                     AND source = :ticker_name
@@ -181,6 +182,7 @@ class Position:
                 "from_day": self.from_day,
                 "today": date.today(),
             },
+            bindparams=[bindparam("accounts", expanding=True)],
             index_col="day",
             parse_dates=["day"],
         )

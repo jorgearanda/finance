@@ -83,5 +83,5 @@ def test_values():
         vcn.change_from_start("2017-03-06") + vcn.yield_from_start("2017-03-06")
     )
 
-    assert vcn.volatility == approx(vcn.values[(vcn.values.open)]["change"].std(axis=0))
+    assert vcn.volatility == approx(vcn.values[vcn.values.open == 1]["change"].std(axis=0))
     simple_fixture_teardown()
