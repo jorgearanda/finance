@@ -1,9 +1,8 @@
 from docopt import docopt
 import pandas as pd
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
+from sqlalchemy import text
 
-import config
+from db import db
 
 usage = """
 Load distributions from CSV file into the database.
@@ -16,22 +15,13 @@ Options:
     -e <env> --env <env>    Environment to load prices into [default: dev]
 """
 
-conn = None
-
-
 def connect(env):
-    global conn
-    conn = psycopg2.connect(
-        database=config.db[env]["db"],
-        user=config.db[env]["user"],
-        cursor_factory=NamedTupleCursor,
-    )
+    db.connect(env)
 
 
 def main(args):
     env = args["--env"]
     connect(env)
-    cur = conn.cursor()
     table = pd.read_csv("populate/distributions.csv")
 
     # Filter data using vectorized operation
@@ -48,16 +38,15 @@ def main(args):
         for row in filtered.itertuples()
     ]
 
-    # Batch insert using executemany
-    cur.executemany(
-        """
-        INSERT INTO distributions (ticker, day, type, amount)
-        VALUES (%(ticker)s, %(day)s, %(type)s, %(amount)s) ON CONFLICT DO NOTHING;""",
-        data,
-    )
-
-    cur.close()
-    conn.commit()
+    # Insert records using SQLAlchemy
+    for record in data:
+        db.conn.execute(
+            text("""
+                INSERT INTO distributions (ticker, day, type, amount)
+                VALUES (:ticker, :day, :type, :amount) ON CONFLICT DO NOTHING;
+            """),
+            record
+        )
 
 
 if __name__ == "__main__":

@@ -48,7 +48,8 @@ class PriceUpdater:
             {"ticker": quote.symbol, "day": quote.day},
         )
 
-        if cur.rowcount == 0:
+        existing_row = cur.fetchone()
+        if existing_row is None:
             cur = db.conn.execute(
                 text("""
                 INSERT INTO assetprices (ticker, day, close)
@@ -64,7 +65,7 @@ class PriceUpdater:
             if self.verbose:
                 print(f"+ {quote.symbol:6} {quote.day}:  -.-- -> {quote.price:.2f}")
         else:
-            prev_price = cur.fetchone().close
+            prev_price = existing_row.close
             if not self._is_same_price(prev_price, quote.price):
                 cur = db.conn.execute(
                     text("""UPDATE assetprices

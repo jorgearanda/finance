@@ -8,3 +8,5 @@ notebooks/Untitled.ipynb
 notebooks/Sandbox.ipynb
 .pytest_cache/
 .vscode/
+data/*.db
+data/*.db-journal
