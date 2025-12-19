@@ -171,11 +171,12 @@ class Portfolio:
         df["volatility"] = df["volatility"].ffill()
         df["10k_equivalent"] = 10000 * (df["twrr"] + 1)
         df["last_peak_twrr"] = df["twrr"].expanding().max()
-        df["last_peak"] = (
-            df["last_peak_twrr"]
-            .groupby(df["last_peak_twrr"])
-            .transform("idxmax")
-            .astype("datetime64[ns]")
+        # Map each peak value to the first date it occurred
+        peak_first_occurrence = df.groupby("last_peak_twrr", sort=False)[
+            "last_peak_twrr"
+        ].apply(lambda x: x.index[0])
+        df["last_peak"] = df["last_peak_twrr"].map(peak_first_occurrence).astype(
+            "datetime64[ns]"
         )
         df["current_drawdown"] = (df["twrr"] - df["last_peak_twrr"]) / (
             1 + df["last_peak_twrr"]
