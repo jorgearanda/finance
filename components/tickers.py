@@ -92,11 +92,10 @@ class Tickers:
 
     def _collect_feature(self, feature):
         """Extract a feature (a column) from several position objects and collect them in a single DataFrame."""
-        _feature = pd.concat(
-            [self.tickers[name].values[feature] for name in self.ticker_names], axis=1
+        return pd.concat(
+            {name: self.tickers[name].values[feature] for name in self.ticker_names},
+            axis=1,
         )
-        _feature.columns = self.ticker_names
-        return _feature
 
     def _collect_volatilities(self):
         """Extract the volatilities from all tickers and collect them in a dictionary."""

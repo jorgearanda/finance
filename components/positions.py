@@ -71,8 +71,7 @@ class Positions:
 
     def _collect_feature(self, feature):
         """Extract a feature (a column) from several position objects and collect them in a single DataFrame."""
-        _feature = pd.concat(
-            [self.positions[name].values[feature] for name in self.ticker_names], axis=1
+        return pd.concat(
+            {name: self.positions[name].values[feature] for name in self.ticker_names},
+            axis=1,
         )
-        _feature.columns = self.ticker_names
-        return _feature
