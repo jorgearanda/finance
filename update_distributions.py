@@ -33,19 +33,28 @@ def main(args):
     connect(env)
     cur = conn.cursor()
     table = pd.read_csv("populate/distributions.csv")
-    for row in table.iterrows():
-        if row[1]["Date"] >= "2016-09-08":  # TODO: so hacky; fix
-            cur.execute(
-                """
-                INSERT INTO distributions (ticker, day, type, amount)
-                VALUES (%(ticker)s, %(day)s, %(type)s, %(amount)s) ON CONFLICT DO NOTHING;""",
-                {
-                    "ticker": row[1]["Ticker"],
-                    "day": row[1]["Date"],
-                    "type": row[1]["Type"],
-                    "amount": row[1]["Amount"],
-                },
-            )
+
+    # Filter data using vectorized operation
+    filtered = table[table["Date"] >= "2016-09-08"]  # TODO: so hacky; fix
+
+    # Prepare data for batch insert
+    data = [
+        {
+            "ticker": row.Ticker,
+            "day": row.Date,
+            "type": row.Type,
+            "amount": row.Amount,
+        }
+        for row in filtered.itertuples()
+    ]
+
+    # Batch insert using executemany
+    cur.executemany(
+        """
+        INSERT INTO distributions (ticker, day, type, amount)
+        VALUES (%(ticker)s, %(day)s, %(type)s, %(amount)s) ON CONFLICT DO NOTHING;""",
+        data,
+    )
 
     cur.close()
     conn.commit()
