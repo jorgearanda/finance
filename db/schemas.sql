@@ -1,11 +1,7 @@
-CREATE TYPE taxCategory AS ENUM ('deferred', 'free', 'taxable', 'restricted');
-CREATE TYPE transactionType AS ENUM ('deposit', 'buy', 'dividend', 'sale', 'withdrawal');
-CREATE TYPE distributionType AS ENUM ('income', 'capital gains');
-
 CREATE TABLE IF NOT EXISTS accountTypes (
     name text unique not null primary key,
-    tax taxCategory not null,
-    margin boolean not null default false
+    tax TEXT NOT NULL CHECK(tax IN ('deferred', 'free', 'taxable', 'restricted')),
+    margin INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS investors(
@@ -21,7 +17,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS assetClasses (
     name text unique not null primary key,
-    domesticCurrency boolean not null  -- domestic equity, bonds, and cash, as well as foreign currency-hedged
+    domesticCurrency INTEGER NOT NULL  -- domestic equity, bonds, and cash, as well as foreign currency-hedged
 );
 
 CREATE TABLE IF NOT EXISTS assets (
@@ -31,12 +27,12 @@ CREATE TABLE IF NOT EXISTS assets (
 
 CREATE TABLE IF NOT EXISTS marketDays (
     day date not null primary key,
-    open boolean not null default true
+    open INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
     day date not null default current_date references marketDays(day),
-    txType transactionType not null,
+    txType TEXT NOT NULL CHECK(txType IN ('deposit', 'buy', 'dividend', 'sale', 'withdrawal')),
     account text not null references accounts(name),
     source text references assets(ticker),
     target text references assets(ticker),
@@ -62,7 +58,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ticker_day ON assetPrices (
 CREATE TABLE IF NOT EXISTS distributions (
     ticker text not null references assets(ticker),
     day date not null default current_date references marketDays(day),
-    type distributionType not null default 'income',
+    type TEXT NOT NULL DEFAULT 'income' CHECK(type IN ('income', 'capital gains')),
     amount numeric(9, 6)
 );
 

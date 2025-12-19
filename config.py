@@ -1,11 +1,10 @@
 db = {
     "dev": {
-        "type": "postgresql",  # Keep PostgreSQL for now
-        "db": "finance",
-        "user": "jorge"
+        "type": "sqlite",
+        "path": "data/finance.db"
     },
     "test": {
-        "type": "sqlite",  # Switch test to SQLite
+        "type": "sqlite",
         "path": "/tmp/financetest.db"
     },
 }

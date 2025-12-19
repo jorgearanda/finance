@@ -7,7 +7,6 @@ jupyterlab
 matplotlib
 numpy
 pandas
-psycopg2-binary
 pytest
 pytest-cov
 pytest-watch
