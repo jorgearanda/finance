@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import bindparam, text
+from sqlalchemy import text
 
 from db import db
 

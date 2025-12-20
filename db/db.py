@@ -10,7 +10,7 @@ import config
 
 conn = None
 engine = None
-_env = "dev"
+_env = "prod"
 
 
 def connect(env=_env):
@@ -21,7 +21,7 @@ def connect(env=_env):
 
     Keyword arguments:
     env -- environment to connect to.
-           Must be a key in the `config.db` dict (default 'dev')
+           Must be a key in the `config.db` dict (default 'prod')
 
     Returns:
     bool -- True if the connection is alive

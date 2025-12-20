@@ -1,5 +1,5 @@
 db = {
-    "dev": {
+    "prod": {
         "type": "sqlite",
         "path": "data/finance.db"
     },
