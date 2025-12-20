@@ -64,7 +64,7 @@ class PriceUpdater:
                 {
                     "ticker": quote.symbol,
                     "day": quote.day,
-                    "close": quote.price,
+                    "close": round(quote.price, 2),
                 },
             )
             self.new_quotes += 1
@@ -82,7 +82,7 @@ class PriceUpdater:
                     {
                         "ticker": quote.symbol,
                         "day": quote.day,
-                        "close": quote.price,
+                        "close": round(quote.price, 2),
                     },
                 )
                 self.updated_quotes += 1
