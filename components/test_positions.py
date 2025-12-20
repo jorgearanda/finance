@@ -46,4 +46,3 @@ def test_loads_with_data():
     assert p.total_returns.loc["2017-03-03"]["VCN.TO"] == approx(
         (3010.0 + 10.1 - 3010.35) / 3010.35
     )
-    simple_fixture_teardown()

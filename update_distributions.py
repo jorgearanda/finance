@@ -16,7 +16,7 @@ Options:
 """
 
 def connect(env):
-    db.connect(env)
+    db.ensure_connected(env)
 
 
 def main(args):

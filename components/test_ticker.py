@@ -84,4 +84,3 @@ def test_values():
     )
 
     assert vcn.volatility == approx(vcn.values[vcn.values.open == 1]["change"].std(axis=0))
-    simple_fixture_teardown()

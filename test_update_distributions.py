@@ -75,7 +75,6 @@ def test_update_distributions_filters_and_inserts():
 
     finally:
         os.unlink(temp_csv)
-        simple_fixture_teardown()
 
 
 def test_update_distributions_handles_duplicates():
@@ -116,8 +115,6 @@ def test_update_distributions_handles_duplicates():
     count = result.fetchone()[0]
     assert count == 1
 
-    simple_fixture_teardown()
-
 
 def test_update_distributions_empty_csv():
     """Test that empty CSV after filtering doesn't cause errors."""
@@ -150,5 +147,3 @@ def test_update_distributions_empty_csv():
     )
     count = result.fetchone()[0]
     assert count == 0
-
-    simple_fixture_teardown()

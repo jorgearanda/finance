@@ -15,7 +15,6 @@ def setup_function():
 
 
 def test_position_class_instantiates():
-    simple_fixture_teardown()  # Clean database first
     vcn = Position("VCN.TO", data=Data())
     assert vcn is not None
     assert vcn.ticker_name == "VCN.TO"
@@ -32,7 +31,6 @@ def test_position_class_instantiates_with_data():
     assert vcn.ticker_name == "VCN.TO"
     assert "total_returns" in vcn.__repr__()
     assert "total_returns" in str(vcn)
-    simple_fixture_teardown()
 
 
 def test_values():
@@ -108,4 +106,3 @@ def test_values():
     assert vcn.weight("2017-03-01") is None
     assert vcn.weight("2017-03-02") == 0
     assert vcn.weight("2017-03-06") == 1
-    simple_fixture_teardown()

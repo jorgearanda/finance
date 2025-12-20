@@ -1,15 +1,20 @@
 import pandas as pd
-from sqlalchemy import bindparam, create_engine, text
+import sqlite3
+
+from datetime import date, datetime
+from pathlib import Path
+from sqlalchemy import create_engine, text
 
 import config
 
 
 conn = None
+engine = None
 _env = "dev"
 
 
 def connect(env=_env):
-    """Connect to finance database (PostgreSQL or SQLite).
+    """Connect to finance database.
 
     The connection becomes available on the `conn` singleton variable.
     Subsequent calls to `connect()` release previous connections and reconnect.
@@ -21,54 +26,62 @@ def connect(env=_env):
     Returns:
     bool -- True if the connection is alive
     """
-    global _env, conn
+    global _env, conn, engine
     _env = env
 
-    db_config = config.db[env]
+    if conn is not None:
+        conn.close()
+        conn = None
+    if engine is not None:
+        engine.dispose()
+        engine = None
 
-    if db_config.get("type") == "sqlite":
-        # SQLite connection
-        from pathlib import Path
-        db_path = db_config["path"]
+    db_config = config.db[env]
+    db_path = db_config["path"]
+
+    # Test databases are in :memory: and have no file
+    if db_path != ":memory:":
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
-        engine = create_engine(
-            f"sqlite:///{db_path}",
-            execution_options={"isolation_level": "AUTOCOMMIT"},
-        )
-    else:
-        # PostgreSQL connection (existing)
-        engine = create_engine(
-            f"postgresql://{db_config['user']}@localhost/{db_config['db']}",
-            execution_options={"isolation_level": "AUTOCOMMIT"},
-        )
+    def adapt_date_iso(val):
+        return val.isoformat()
 
+    def adapt_datetime_iso(val):
+        return val.isoformat()
+
+    def convert_date(val):
+        return date.fromisoformat(val.decode())
+
+    def convert_datetime(val):
+        return datetime.fromisoformat(val.decode())
+
+    sqlite3.register_adapter(date, adapt_date_iso)
+    sqlite3.register_adapter(datetime, adapt_datetime_iso)
+    sqlite3.register_converter("date", convert_date)
+    sqlite3.register_converter("timestamp", convert_datetime)
+
+    new_engine = create_engine(
+        f"sqlite:///{db_path}",
+        execution_options={"isolation_level": "AUTOCOMMIT"},
+        connect_args={"detect_types": sqlite3.PARSE_DECLTYPES},
+    )
+
+    engine = new_engine
     conn = engine.connect().execution_options(autocommit=True)
     return is_alive()
 
 
 def ensure_connected(env=None):
-    """Check if there is a database connection, and connect if there is not.
-
-    This module does not allow switching between connections to different
-    environments.
-
-    If there is an existing connection, and `ensure_connected` is called
-    with a different environment parameter than the one we are connected to,
-    an exception will be raised.
-    """
+    """Check if there is a database connection, and connect if there is not."""
     global _env
     if env is None:
         env = _env
 
     if conn is not None and env != _env:
-        raise Exception("Already connected to a different environment.")
+        raise ValueError("Already connected to a different environment.")
 
     _env = env
-    if is_alive():
-        return True
-    else:
-        return connect(_env)
+    return True if is_alive() else connect(_env)
 
 
 def is_alive():
@@ -90,5 +103,9 @@ def df_from_sql(sql, params, index_col, parse_dates, bindparams=None):
         sql_text = sql_text.bindparams(*bindparams)
 
     return pd.read_sql_query(
-        sql=sql_text, con=conn, params=params, index_col=index_col, parse_dates=parse_dates
+        sql=sql_text,
+        con=conn,
+        params=params,
+        index_col=index_col,
+        parse_dates=parse_dates,
     )

@@ -23,12 +23,14 @@ class PriceUpdater:
     def _ticker_symbols(self):
         """Get all the tickers to poll from the database."""
         db.ensure_connected()
-        cur = db.conn.execute(text(
-            """
+        cur = db.conn.execute(
+            text(
+                """
             SELECT ticker AS name
             FROM assets
             WHERE class != 'Domestic Cash';"""
-        ))
+            )
+        )
 
         return [ticker.name for ticker in cur.fetchall()]
 
@@ -43,18 +45,22 @@ class PriceUpdater:
             return
 
         cur = db.conn.execute(
-            text("""SELECT close FROM assetprices
-            WHERE ticker = :ticker AND day = :day;"""),
+            text(
+                """SELECT close FROM assetprices
+            WHERE ticker = :ticker AND day = :day;"""
+            ),
             {"ticker": quote.symbol, "day": quote.day},
         )
 
         existing_row = cur.fetchone()
         if existing_row is None:
             cur = db.conn.execute(
-                text("""
+                text(
+                    """
                 INSERT INTO assetprices (ticker, day, close)
                 VALUES (:ticker, :day, :close)
-                ON CONFLICT DO NOTHING;"""),
+                ON CONFLICT DO NOTHING;"""
+                ),
                 {
                     "ticker": quote.symbol,
                     "day": quote.day,
@@ -68,9 +74,11 @@ class PriceUpdater:
             prev_price = existing_row.close
             if not self._is_same_price(prev_price, quote.price):
                 cur = db.conn.execute(
-                    text("""UPDATE assetprices
+                    text(
+                        """UPDATE assetprices
                     SET close = :close
-                    WHERE ticker = :ticker AND day = :day;"""),
+                    WHERE ticker = :ticker AND day = :day;"""
+                    ),
                     {
                         "ticker": quote.symbol,
                         "day": quote.day,
@@ -80,7 +88,7 @@ class PriceUpdater:
                 self.updated_quotes += 1
                 if self.verbose:
                     print(
-                        f"* {quote.symbol:6} {quote.day}: {prev_price} -> {quote.price:.2f}"
+                        f"* {quote.symbol:6} {quote.day}: {prev_price:.2f} -> {quote.price:.2f}"
                     )
 
     def _is_same_price(self, prev, new):

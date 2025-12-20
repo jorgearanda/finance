@@ -7,18 +7,30 @@ from db import db
 db._env = "test"
 
 
+@pytest.fixture(autouse=True)
+def setup_test_database():
+    db.connect("test")
+    _create_schema()
+
+    yield
+
+    if db.conn is not None:
+        db.conn.close()
+    if db.engine is not None:
+        db.engine.dispose()
+
+
+def _create_schema():
+    with open("db/schemas.sql", "r") as f:
+        schema_sql = f.read()
+
+    raw_conn = db.conn.connection.driver_connection
+    raw_conn.executescript(schema_sql)
+
+
 def simple_fixture():
     db._env = "test"
     db.ensure_connected("test")
-    db.conn.execute(text("""DELETE FROM transactions;"""))
-    db.conn.execute(text("""DELETE FROM distributions;"""))
-    db.conn.execute(text("""DELETE FROM assetprices;"""))
-    db.conn.execute(text("""DELETE FROM marketdays;"""))
-    db.conn.execute(text("""DELETE FROM assets;"""))
-    db.conn.execute(text("""DELETE FROM assetclasses;"""))
-    db.conn.execute(text("""DELETE FROM accounts;"""))
-    db.conn.execute(text("""DELETE FROM investors;"""))
-    db.conn.execute(text("""DELETE FROM accounttypes;"""))
     db.conn.execute(
         text(
             """
@@ -112,19 +124,10 @@ def simple_fixture():
             ('2017-03-06', 'dividend', 'RRSP1', 'VCN.TO', 'Cash', 100, 0.0990, 0, 9.90);"""
         )
     )
-    db.conn.close()
-    db.ensure_connected("test")
 
 
 def simple_fixture_teardown():
-    db.ensure_connected("test")
-    db.conn.execute(text("""DELETE FROM transactions;"""))
-    db.conn.execute(text("""DELETE FROM distributions;"""))
-    db.conn.execute(text("""DELETE FROM assetprices;"""))
-    db.conn.execute(text("""DELETE FROM marketdays;"""))
-    db.conn.execute(text("""DELETE FROM assets;"""))
-    db.conn.execute(text("""DELETE FROM assetclasses;"""))
-    db.conn.execute(text("""DELETE FROM accounts;"""))
-    db.conn.execute(text("""DELETE FROM investors;"""))
-    db.conn.execute(text("""DELETE FROM accounttypes;"""))
-    db.conn.close()
+    if db.conn is not None:
+        db.conn.close()
+    if db.engine is not None:
+        db.engine.dispose()

@@ -28,7 +28,7 @@ class TestSimplePortfolio:
         load_portfolio()
 
     def teardown_method(self):
-        simple_fixture_teardown()
+        pass
 
     def test_smoke(self):
         assert p.deposits

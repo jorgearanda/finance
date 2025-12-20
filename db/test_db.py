@@ -50,7 +50,7 @@ class TestDfFromSql:
         simple_fixture()
 
     def teardown_method(self):
-        simple_fixture_teardown()
+        pass
 
     def test_query(self):
         sql = """SELECT SUM(total) AS amount, day

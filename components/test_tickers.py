@@ -42,4 +42,3 @@ def test_loads_with_data():
     assert t.correlations["VCN.TO"]["VEE.TO"] == approx(-0.9922778767136671)
 
     assert t.price("2017-03-02", "VCN.TO") == approx(30.00)
-    simple_fixture_teardown()

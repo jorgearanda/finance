@@ -11,7 +11,7 @@ class TestData:
         simple_fixture()
 
     def teardown_method(self):
-        simple_fixture_teardown()
+        pass
 
     def test_create(self):
         d = Data()

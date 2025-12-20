@@ -31,7 +31,8 @@ class TestSimpleSnapshot:
         load_snapshot()
 
     def teardown_method(self):
-        simple_fixture_teardown()
+        global s
+        s = None  # Clear snapshot to allow garbage collection
 
     def test_smoke(self):
         pass

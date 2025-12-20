@@ -5,7 +5,7 @@ db = {
     },
     "test": {
         "type": "sqlite",
-        "path": "/tmp/financetest.db"
+        "path": ":memory:"
     },
 }
 sharpe = 0.017
