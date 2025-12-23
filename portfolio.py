@@ -157,7 +157,12 @@ class Portfolio:
         df["day_profit"] = (
             df["total_value"] - df["total_value"].shift(1) - df["day_deposits"]
         ).fillna(0.00)
-        df["day_returns"] = (df["day_profit"] / df["total_value"].shift(1)).fillna(0.00)
+        prev_total_value = df["total_value"].shift(1)
+        df["day_returns"] = np.where(
+            (prev_total_value.notna()) & (prev_total_value != 0),
+            df["day_profit"] / prev_total_value,
+            0.00
+        )
         df["profit"] = df["total_value"] - df["capital"]
         df["appreciation_returns"] = df["appreciation"] / df["capital"]
         df["distribution_returns"] = df["dividends"] / df["capital"]
