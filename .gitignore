@@ -1,6 +1,7 @@
 *.pyc
 .coverage
 cover/
+data/
 populate/
 *.ipynb_checkpoints
 .cache/
